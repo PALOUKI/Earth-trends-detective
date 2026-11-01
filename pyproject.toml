@@ -18,6 +18,8 @@ dependencies = [
   "netCDF4==1.7.2",
   "h5netcdf==1.6.1",
   "earthaccess==0.14.0",
+  "pydap==3.5.9",
+  "pyhdf==0.11.6",
   "pymannkendall==1.4.3",
   "rio-tiler==9.4.9",
   "statsmodels==0.14.4",

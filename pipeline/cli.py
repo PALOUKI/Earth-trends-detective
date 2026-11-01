@@ -3,7 +3,8 @@
 import argparse
 from pathlib import Path
 
-from pipeline.ingest.gistemp import ingest
+from pipeline.ingest.gistemp import ingest as ingest_gistemp
+from pipeline.variables import VARIABLE_CONFIG
 
 
 def main() -> None:
@@ -16,15 +17,27 @@ def main() -> None:
         help="Also compare monthly trends with annual-mean trends and save concordance fields.",
     )
     args = parser.parse_args()
-    if args.variable != "gistemp_tas_anom":
+    if args.variable not in VARIABLE_CONFIG:
         raise SystemExit(f"Unknown variable: {args.variable}")
     if args.stage == "ingest":
-        print(ingest())
+        if args.variable == "gistemp_tas_anom":
+            print(ingest_gistemp())
+        else:
+            from pipeline.ingest.modis_vegetation import download_modis, prepare_modis
+
+            vegetation_index = args.variable.removeprefix("modis_")
+            download_modis()
+            print(prepare_modis(variable=vegetation_index))
         return
     if args.stage == "preprocess":
-        from pipeline.ingest.gistemp import prepare_gistemp
+        if args.variable == "gistemp_tas_anom":
+            from pipeline.ingest.gistemp import prepare_gistemp
 
-        print(prepare_gistemp())
+            print(prepare_gistemp())
+        else:
+            from pipeline.ingest.modis_vegetation import prepare_modis
+
+            print(prepare_modis(variable=args.variable.removeprefix("modis_")))
         return
     if args.stage == "trends":
         import time
@@ -36,10 +49,8 @@ def main() -> None:
         from pipeline.trends.base import analyze_grid
         from pipeline.trends.export import write_trend_cog
 
-        source = xr.open_zarr(
-            "data/processed/gistemp_tas_anom.zarr",
-            chunks={"time": -1, "lat": -1, "lon": -1},
-        )
+        config = VARIABLE_CONFIG[args.variable]
+        source = xr.open_zarr(config["path"], chunks={"time": -1, "lat": -1, "lon": -1})
         windows = {
             "full": (None, None),
             "2010-fin": ("2010-01-01", None),
@@ -47,7 +58,7 @@ def main() -> None:
         }
         output_root = Path("data/processed") / args.variable
         for name, (start, end) in windows.items():
-            selected = source.temperature_anomaly
+            selected = source[config["field"]]
             if start or end:
                 selected = selected.sel(time=slice(start, end))
             stats_started = time.perf_counter()
@@ -58,7 +69,7 @@ def main() -> None:
                     "variable": args.variable,
                     "window": name,
                     "temporal_resolution": "monthly",
-                    "source": "NASA GISS GISTEMP v4",
+                    "source": config["source"],
                 }
             )
             if args.annual:
@@ -88,10 +99,13 @@ def main() -> None:
     if args.stage == "tiles":
         from pipeline.tiling.render import render_trend_map
 
-        for window in ("full", "2010-fin", "2015-fin"):
+        windows = VARIABLE_CONFIG[args.variable]["windows"]
+        slope_unit = VARIABLE_CONFIG[args.variable]["rate_unit"]
+
+        for window in windows:
             trends = Path("data/processed") / args.variable / f"trend_{window}.zarr"
             output = Path("data/tiles") / args.variable / window
-            render_trend_map(trends, output)
+            render_trend_map(trends, output, slope_unit=str(slope_unit))
             print(output)
         return
     raise SystemExit(f"Pipeline stage {args.stage!r} is not implemented yet.")

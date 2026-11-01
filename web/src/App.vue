@@ -19,10 +19,12 @@ const copy = {
   en: {
     explore: 'Explore', methods: 'Methods & validation', about: 'About', lang: 'Français',
     parameters: 'Analysis parameters', dataset: 'DATASET', variable: 'Variable',
+    accessBlocked: 'Access authorization pending', sampleOnly: 'Sample acquired; trend analysis pending',
+    acquiring: 'Downloading granules; analysis pending', seriesProcessed: 'Time series processed; maps pending',
     place: 'Study area', selectRegion: 'Choose a region', draw: 'Draw a rectangle',
     drawing: 'Drag on the map to draw', period: 'Analysis period', full: 'Full record',
     since2010: 'Since 2010', since2015: 'Since 2015', apply: 'Analyze region',
-    chart: 'Regional time series', summary: 'Trend summary', loading: 'Analyzing GISTEMP…',
+    chart: 'Regional time series', summary: 'Trend summary', loading: 'Analyzing selected variable…',
     loadingMap: 'Loading trend layer…', rate: 'Linear rate', confidence: '95% confidence interval',
     pValueHelp: 'A p-value measures how unusual these data would be if there were no trend; it is not the probability that the result is true.',
     confidenceHelp: 'The 95% interval gives a range of plausible linear rates under the model assumptions.',
@@ -56,10 +58,12 @@ const copy = {
   fr: {
     explore: 'Explorer', methods: 'Méthodes et validation', about: 'À propos', lang: 'English',
     parameters: 'Paramètres d’analyse', dataset: 'JEU DE DONNÉES', variable: 'Variable',
+    accessBlocked: 'Autorisation d’accès en attente', sampleOnly: 'Échantillon acquis ; analyse en attente',
+    acquiring: 'Granules en téléchargement ; analyse en attente', seriesProcessed: 'Série prétraitée ; cartes en attente',
     place: 'Zone étudiée', selectRegion: 'Choisir une région', draw: 'Dessiner un rectangle',
     drawing: 'Tracer sur la carte', period: 'Période d’analyse', full: 'Toute la série',
     since2010: 'Depuis 2010', since2015: 'Depuis 2015', apply: 'Analyser la région',
-    chart: 'Série temporelle régionale', summary: 'Résumé de tendance', loading: 'Analyse de GISTEMP…',
+    chart: 'Série temporelle régionale', summary: 'Résumé de tendance', loading: 'Analyse de la variable…',
     loadingMap: 'Chargement de la carte…', rate: 'Taux linéaire', confidence: 'Intervalle de confiance à 95 %',
     pValueHelp: 'La valeur p indique à quel point ces données seraient inhabituelles en l’absence de tendance ; ce n’est pas la probabilité que le résultat soit vrai.',
     confidenceHelp: 'L’intervalle à 95 % donne une plage de taux linéaires plausibles sous les hypothèses du modèle.',
@@ -99,6 +103,9 @@ const mapElement = ref<HTMLElement | null>(null)
 const mapLayer = ref<MapLayer | null>(null)
 const mapWindow = ref<WindowId>('full')
 const variables = ref<VariableInfo[]>([])
+const catalogVariables = ref<VariableInfo[]>([])
+const selectedVariable = ref('gistemp_tas_anom')
+const activeVariable = computed(() => catalogVariables.value.find((item) => item.id === selectedVariable.value) ?? variables.value[0])
 const regions = ref<RegionInfo[]>([])
 const regionId = ref('amazon')
 const selectedBounds = ref<[number, number, number, number]>([-75, -15, -45, 5])
@@ -136,9 +143,9 @@ const chartOption = computed(() => {
     animation: false,
     color: chartMode.value === 'raw' ? ['#526071'] : ['#0b3d91', '#006a63'],
     grid: { left: 48, right: 18, top: 28, bottom: 32 },
-    tooltip: { trigger: 'axis', valueFormatter: (value: number) => `${value.toFixed(3)} K` },
+    tooltip: { trigger: 'axis', valueFormatter: (value: number) => `${value.toFixed(3)} ${analysis.value?.unit ?? ''}` },
     xAxis: { type: 'category', boundaryGap: false, data: labels, axisLine: { lineStyle: { color: '#c4c6d3' } }, axisLabel: { color: '#526071', hideOverlap: true } },
-    yAxis: { type: 'value', name: 'K', splitLine: { lineStyle: { color: '#e3e7ee' } }, axisLabel: { color: '#526071' } },
+    yAxis: { type: 'value', name: analysis.value.unit, splitLine: { lineStyle: { color: '#e3e7ee' } }, axisLabel: { color: '#526071' } },
     series: [
       { name: chartMode.value === 'raw' ? t.value.raw : t.value.deseasoned, type: 'line', showSymbol: false, connectNulls: false, lineStyle: { width: 1.5 }, data: series },
       ...(chartMode.value === 'raw' ? [] : [{ name: t.value.trend, type: 'line', showSymbol: false, symbol: 'none', connectNulls: true, lineStyle: { color: '#006a63', width: 2, type: 'dashed' }, data: trendLine }]),
@@ -163,7 +170,7 @@ function periodBounds(bounds: [number, number, number, number]) {
 async function loadMap() {
   mapLoading.value = true
   try {
-    mapLayer.value = await api.map(mapWindow.value)
+    mapLayer.value = await api.map(selectedVariable.value, mapWindow.value)
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : String(caught)
   } finally {
@@ -177,12 +184,13 @@ async function runAnalysis() {
   try {
     analysis.value = selectedPoint.value
       ? await api.point(
+          selectedVariable.value,
           selectedPoint.value.lat,
           selectedPoint.value.lon,
           periodStart[period.value],
         )
       : await api.region(
-          periodBounds(selectedBounds.value), selectedLabel.value, periodStart[period.value],
+          selectedVariable.value, periodBounds(selectedBounds.value), selectedLabel.value, periodStart[period.value],
         )
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : String(caught)
@@ -197,7 +205,7 @@ async function inspectPoint(lat: number, lon: number) {
   selectedPoint.value = { lat, lon }
   selectedLabel.value = `${lat.toFixed(1)}°, ${lon.toFixed(1)}°`
   try {
-    analysis.value = await api.point(lat, lon, periodStart[period.value])
+    analysis.value = await api.point(selectedVariable.value, lat, lon, periodStart[period.value])
     regionId.value = ''
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : String(caught)
@@ -279,6 +287,11 @@ watch(period, () => {
   void runAnalysis()
 })
 watch(mapWindow, () => void loadMap())
+watch(selectedVariable, () => {
+  selectedPoint.value = null
+  void loadMap()
+  void runAnalysis()
+})
 watch(locale, () => {
   if (regionId.value) {
     const selected = regions.value.find((item) => item.id === regionId.value)
@@ -288,7 +301,9 @@ watch(locale, () => {
 
 onMounted(async () => {
   try {
-    ;[variables.value, regions.value] = await Promise.all([api.variables(), api.regions()])
+    ;[variables.value, catalogVariables.value, regions.value] = await Promise.all([
+      api.variables(), api.catalog(), api.regions(),
+    ])
     await Promise.all([loadMap(), runAnalysis()])
   } catch (caught) {
     error.value = caught instanceof Error ? caught.message : String(caught)
@@ -318,15 +333,22 @@ onMounted(async () => {
     <main v-if="page === 'explore'" class="workspace">
       <aside class="control-panel">
         <div class="panel-head">
-          <div><span class="eyebrow">{{ t.parameters }}</span><span class="dataset-pill">GISTEMP v4</span></div>
+          <div><span class="eyebrow">{{ t.parameters }}</span><span class="dataset-pill">{{ activeVariable?.source }}</span></div>
           <button class="icon-button" :aria-label="t.guided" title="Guided investigation" @click="beginWizard">?</button>
         </div>
         <div class="panel-scroll">
           <section class="parameter-card">
             <span class="step-label">01 · {{ t.variable }}</span>
-            <h1>{{ variables[0]?.[locale === 'en' ? 'name' : 'name_fr'] ?? 'Surface temperature anomaly' }}</h1>
-            <p>{{ variables[0]?.[locale === 'en' ? 'definition' : 'definition_fr'] }}</p>
-            <div class="metadata-row"><span>{{ t.dataFrequency }}</span><span>1880–2026</span></div>
+            <label class="field-label" for="variable-select">{{ t.variable }}</label>
+            <select id="variable-select" v-model="selectedVariable">
+              <option v-for="item in catalogVariables" :key="item.id" :value="item.id" :disabled="item.status !== 'analysis_ready'">
+                {{ locale === 'fr' ? item.name_fr : item.name }}{{ item.status !== 'analysis_ready' ? ` · ${item.short_name ?? item.status}` : '' }}
+              </option>
+            </select>
+            <h1>{{ activeVariable?.[locale === 'en' ? 'name' : 'name_fr'] ?? 'Surface temperature anomaly' }}</h1>
+            <p>{{ activeVariable?.[locale === 'en' ? 'definition' : 'definition_fr'] }}</p>
+            <p v-if="activeVariable?.status !== 'analysis_ready'" class="field-help">{{ activeVariable?.status === 'blocked_eula' ? t.accessBlocked : activeVariable?.status === 'acquiring' ? t.acquiring : activeVariable?.status === 'series_processed' ? t.seriesProcessed : t.sampleOnly }} — {{ activeVariable?.status_detail }}</p>
+            <div class="metadata-row"><span>{{ activeVariable?.period }}</span></div>
           </section>
 
           <section class="parameter-card">
@@ -360,9 +382,9 @@ onMounted(async () => {
 
           <section v-if="analysis" class="result-card">
             <div class="result-heading"><span class="step-label">{{ t.summary }}</span><span class="verdict" :class="analysis.significant ? 'good' : 'caution'" :title="t.significanceHelp" :aria-label="t.significanceHelp">{{ analysis.significant ? '✓' : '◷' }} {{ statusText }}</span></div>
-            <div class="rate-value">{{ formatRate(analysis.trend.slope_ols) }}</div>
+            <div class="rate-value">{{ formatRate(analysis.trend.slope_ols, analysis.unit) }}</div>
             <div class="rate-label">{{ t.rate }} <span class="info" :title="t.m1">ⓘ</span></div>
-            <div class="confidence-row"><span>{{ t.confidence }} <span class="info" :title="t.confidenceHelp" :aria-label="t.confidenceHelp">ⓘ</span></span><strong>{{ formatRate(analysis.trend.slope_ols_lo) }} – {{ formatRate(analysis.trend.slope_ols_hi) }}</strong></div>
+            <div class="confidence-row"><span>{{ t.confidence }} <span class="info" :title="t.confidenceHelp" :aria-label="t.confidenceHelp">ⓘ</span></span><strong>{{ formatRate(analysis.trend.slope_ols_lo, analysis.unit) }} – {{ formatRate(analysis.trend.slope_ols_hi, analysis.unit) }}</strong></div>
             <div class="test-grid">
               <div :title="`${t.pValueHelp} ${t.m1}`"><span>{{ t.ols }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_ols) }}</strong></div>
               <div :title="`${t.pValueHelp} ${t.m2}`"><span>{{ t.mk }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_mk) }}</strong></div>
@@ -373,7 +395,7 @@ onMounted(async () => {
           </section>
           <div v-if="error" class="error-message" role="alert">{{ error }} <button class="text-button" @click="error = ''">×</button></div>
         </div>
-        <footer class="panel-footer"><span class="source-dot"></span>{{ t.source }} <a href="https://data.giss.nasa.gov/gistemp/" target="_blank" rel="noreferrer">↗</a></footer>
+        <footer class="panel-footer"><span class="source-dot"></span>{{ activeVariable?.source }}</footer>
       </aside>
 
       <section class="map-workspace" aria-label="Trend map and time series">
@@ -383,9 +405,9 @@ onMounted(async () => {
         </div>
         <div ref="mapElement" class="map-canvas" :aria-label="t.mapTitle"></div>
         <div class="map-overlay-label"><span class="overlay-swatch"></span>{{ t.slopeLayer }} <span class="subtle-separator">|</span> {{ t.nonsignificantLayer }}</div>
-        <div class="map-legend" aria-label="Diverging trend palette legend"><span>{{ mapLayer?.scale_min.toFixed(3) ?? '−' }}</span><div class="legend-gradient"></div><span>0</span><span class="legend-gradient reverse"></span><span>+{{ Math.abs(mapLayer?.scale_max ?? 0).toFixed(3) }}</span><small>K/year</small></div>
+        <div class="map-legend" aria-label="Diverging trend palette legend"><span>{{ mapLayer?.scale_min.toFixed(3) ?? '−' }}</span><div class="legend-gradient"></div><span>0</span><span class="legend-gradient reverse"></span><span>+{{ Math.abs(mapLayer?.scale_max ?? 0).toFixed(3) }}</span><small>{{ mapLayer?.slope_unit }}</small></div>
         <div v-if="mapLoading" class="map-loading">{{ t.loadingMap }}</div>
-        <div class="map-attribution">Basemap: NASA GIBS Blue Marble. Trend overlay: NASA GISS GISTEMP.</div>
+        <div class="map-attribution">Basemap: NASA GIBS Blue Marble. Trend overlay: {{ activeVariable?.source }}.</div>
 
         <section v-if="analysis" class="chart-panel">
           <div class="chart-header">
@@ -406,7 +428,7 @@ onMounted(async () => {
         <article><span class="method-index">03</span><h2>{{ t.hr }} + FDR</h2><p>{{ t.m3 }}</p><span class="method-formula">BH false discovery rate · α = 0.10</span></article>
       </div>
       <article class="validation-card"><span class="eyebrow">{{ t.validation }}</span><p>{{ t.validation }}</p><a href="https://data.giss.nasa.gov/gistemp/data_v4.html" target="_blank" rel="noreferrer">NASA GISTEMP v4 data and methods ↗</a></article>
-      <article class="validation-card"><h2>{{ t.limitations }}</h2><p>{{ variables[0]?.limitations }}</p><p>{{ t.disclaimer }}</p></article>
+      <article class="validation-card"><h2>{{ t.limitations }}</h2><p>{{ activeVariable?.limitations }}</p><p>{{ t.disclaimer }}</p></article>
     </main>
 
     <main v-else class="content-page about-page">
@@ -421,7 +443,7 @@ onMounted(async () => {
         <span class="step-label">{{ locale === 'en' ? 'STEP' : 'ÉTAPE' }} {{ wizardStep }} / 3</span>
         <template v-if="wizardStep === 1"><h2 id="wizard-title">{{ t.theme }}</h2><div class="choice-grid"><button v-for="choice in [['climate', t.themeClimate], ['water', t.themeWater], ['vegetation', t.themePlants], ['air', t.themeAir]]" :key="choice[0]" :class="{ chosen: wizardTheme === choice[0] }" @click="wizardTheme = choice[0]">{{ choice[1] }}</button></div></template>
         <template v-else-if="wizardStep === 2"><h2 id="wizard-title">{{ t.where }}</h2><label class="field-label" for="wizard-place">{{ t.place }}</label><input id="wizard-place" v-model="wizardPlace" class="text-input" placeholder="e.g. Amazon" /><div class="quick-places"><button v-for="region in regions" :key="region.id" @click="wizardPlace = locale === 'fr' ? region.name_fr : region.name">{{ locale === 'fr' ? region.name_fr : region.name }}</button></div></template>
-        <template v-else><h2 id="wizard-title">{{ t.variable }}</h2><div class="wizard-variable"><strong>{{ variables[0]?.[locale === 'en' ? 'name' : 'name_fr'] }}</strong><p>{{ variables[0]?.[locale === 'en' ? 'definition' : 'definition_fr'] }}</p><span>NASA GISS · monthly · 2° grid</span></div></template>
+        <template v-else><h2 id="wizard-title">{{ t.variable }}</h2><div class="wizard-variable"><strong>{{ activeVariable?.[locale === 'en' ? 'name' : 'name_fr'] }}</strong><p>{{ activeVariable?.[locale === 'en' ? 'definition' : 'definition_fr'] }}</p><span>{{ activeVariable?.source }}</span></div></template>
         <div class="dialog-actions"><button class="button secondary" :disabled="wizardStep === 1" @click="wizardStep--">{{ locale === 'en' ? 'Back' : 'Retour' }}</button><button class="button primary" @click="wizardNext">{{ wizardStep === 3 ? t.apply : locale === 'en' ? 'Continue' : 'Continuer' }} <span aria-hidden="true">→</span></button></div>
       </section>
     </div>

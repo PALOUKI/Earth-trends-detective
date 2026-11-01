@@ -32,3 +32,14 @@ def test_catalog_suggestions_and_regions_have_contract_fields() -> None:
     assert "definition" in variables.json()[0]
     assert regions.json()[0]["geometry_type"] == "illustrative_rectangle"
     assert suggestions.json()[0]["available"] is False
+
+
+def test_catalog_distinguishes_ready_sample_and_access_blocked_products() -> None:
+    response = _request("/api/catalog")
+
+    assert response.status_code == 200
+    products = {item["id"]: item for item in response.json()}
+    assert products["gistemp_tas_anom"]["status"] == "analysis_ready"
+    assert products["modis_ndvi"]["short_name"] == "MOD13C2"
+    assert products["modis_ndvi"]["status"] in {"sample_downloaded", "acquiring"}
+    assert products["merra2_precipitation"]["status"] == "blocked_eula"

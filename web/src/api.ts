@@ -7,7 +7,11 @@ export interface VariableInfo {
   definition_fr: string
   period: string
   limitations: string
-  windows: string[]
+  windows?: string[]
+  status?: 'analysis_ready' | 'sample_downloaded' | 'acquiring' | 'series_processed' | 'blocked_eula'
+  status_detail?: string
+  source?: string
+  short_name?: string | null
 }
 
 export interface RegionInfo {
@@ -79,16 +83,17 @@ async function getJson<T>(path: string): Promise<T> {
 
 export const api = {
   variables: () => getJson<VariableInfo[]>('/api/variables'),
+  catalog: () => getJson<VariableInfo[]>('/api/catalog'),
   regions: () => getJson<RegionInfo[]>('/api/regions'),
   suggest: (theme: string, place: string) =>
     getJson<Array<{ variable: string; name: string; definition: string; available: boolean; message: string }>>(
       `/api/suggest?theme=${encodeURIComponent(theme)}&place=${encodeURIComponent(place)}`,
     ),
-  region: (bounds: [number, number, number, number], label: string, start?: string, end?: string) =>
-    postJson<Analysis>('/api/region', { variable: 'gistemp_tas_anom', bounds, label, start, end }),
-  point: (lat: number, lon: number, start?: string, end?: string) =>
-    getJson<Analysis>(`/api/point?variable=gistemp_tas_anom&lat=${lat}&lon=${lon}${start ? `&start=${start}` : ''}${end ? `&end=${end}` : ''}`),
-  map: (window: string) => getJson<MapLayer>(`/api/trend/gistemp_tas_anom?window=${window}`),
+  region: (variable: string, bounds: [number, number, number, number], label: string, start?: string, end?: string) =>
+    postJson<Analysis>('/api/region', { variable, bounds, label, start, end }),
+  point: (variable: string, lat: number, lon: number, start?: string, end?: string) =>
+    getJson<Analysis>(`/api/point?variable=${encodeURIComponent(variable)}&lat=${lat}&lon=${lon}${start ? `&start=${start}` : ''}${end ? `&end=${end}` : ''}`),
+  map: (variable: string, window: string) => getJson<MapLayer>(`/api/trend/${encodeURIComponent(variable)}?window=${window}`),
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {

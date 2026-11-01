@@ -76,3 +76,24 @@ def test_region_endpoint_returns_trend_summary_from_data(tmp_path, monkeypatch) 
     assert docs.status_code == 200
     assert suggestions.status_code == 200
     assert suggestions.json()[0]["region_id"] == "amazon"
+
+
+def test_unprocessed_verified_variable_is_reported_as_temporarily_unavailable(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setitem(main.VARIABLE_CONFIG["modis_ndvi"], "path", tmp_path / "missing.zarr")
+    async def send_request():
+        async with AsyncClient(
+            transport=ASGITransport(app=main.app), base_url="http://test"
+        ) as client:
+            return await client.post(
+                "/api/region",
+                json={
+                    "variable": "modis_ndvi",
+                    "bounds": [-10, -10, 10, 10],
+                    "label": "MODIS sample",
+                },
+            )
+
+    response = asyncio.run(send_request())
+    assert response.status_code == 503

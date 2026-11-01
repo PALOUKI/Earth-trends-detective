@@ -1,7 +1,7 @@
-export function formatRate(value: number | null | undefined): string {
+export function formatRate(value: number | null | undefined, unit = 'K'): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—'
   const scaled = value * 10
-  return `${scaled >= 0 ? '+' : ''}${scaled.toFixed(2)} K / decade`
+  return `${scaled >= 0 ? '+' : ''}${scaled.toFixed(2)} ${unit} / decade`
 }
 
 export function formatPValue(value: number | null | undefined): string {

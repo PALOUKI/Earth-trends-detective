@@ -26,6 +26,7 @@ from api.app.summary import make_summary
 from pipeline.regions import DATASET_PATH, analyze_region
 from pipeline.trends.base import analyze_series, deseasonalize_monthly
 from pipeline.trends.breakpoint import analyze_pettitt
+from pipeline.variables import VARIABLE_CONFIG
 
 load_dotenv()
 
@@ -40,6 +41,102 @@ VARIABLE = {
     "limitations": "Blended land and ocean anomalies; coverage varies by place and time.",
     "windows": ["full", "2010-fin", "2015-fin"],
 }
+
+CATALOG = [
+    {
+        **VARIABLE,
+        "source": "NASA GISS GISTEMP v4",
+        "short_name": None,
+        "status": "analysis_ready",
+        "status_detail": "Source, regional analysis, and trend map are available.",
+    },
+    {
+        "id": "modis_ndvi",
+        "name": "MODIS monthly vegetation index (NDVI)",
+        "name_fr": "Indice mensuel de végétation MODIS (NDVI)",
+        "unit": "1",
+        "definition": "Monthly MODIS normalized difference vegetation index.",
+        "definition_fr": "Indice mensuel de végétation normalisé MODIS.",
+        "period": "2000-02 onward; source sample verified, complete series not ingested",
+        "limitations": (
+            "Vegetation-index proxy; cloud, snow, viewing conditions and land cover "
+            "affect retrievals."
+        ),
+        "windows": ["full", "2010-fin", "2015-fin"],
+        "source": "NASA Terra MODIS MOD13C2 v061",
+        "short_name": "MOD13C2",
+        "status": "sample_downloaded",
+        "status_detail": (
+            "One real monthly granule is decoded; at least 120 consecutive months "
+            "and trend products are still required."
+        ),
+    },
+    {
+        "id": "modis_evi",
+        "name": "MODIS monthly enhanced vegetation index (EVI)",
+        "name_fr": "Indice mensuel de végétation amélioré MODIS (EVI)",
+        "unit": "1",
+        "definition": "Monthly MODIS enhanced vegetation index.",
+        "definition_fr": "Indice mensuel de végétation amélioré MODIS.",
+        "period": "2000-02 onward; source sample verified, complete series not ingested",
+        "limitations": (
+            "Vegetation-index proxy; cloud, snow, viewing conditions and land cover "
+            "affect retrievals."
+        ),
+        "windows": ["full", "2010-fin", "2015-fin"],
+        "source": "NASA Terra MODIS MOD13C2 v061",
+        "short_name": "MOD13C2",
+        "status": "sample_downloaded",
+        "status_detail": (
+            "One real monthly granule is decoded; at least 120 consecutive months "
+            "and trend products are still required."
+        ),
+    },
+    {
+        "id": "merra2_precipitation",
+        "name": "MERRA-2 monthly precipitation",
+        "name_fr": "Précipitations mensuelles MERRA-2",
+        "unit": "kg m⁻² s⁻¹",
+        "definition": "Monthly precipitation from the NASA MERRA-2 reanalysis.",
+        "definition_fr": "Précipitations mensuelles issues de la réanalyse NASA MERRA-2.",
+        "period": "1980 onward",
+        "limitations": "Model reanalysis, not a direct satellite measurement.",
+        "source": "NASA GMAO MERRA-2 v5.12.4",
+        "short_name": "M2TMNXFLX",
+        "status": "blocked_eula",
+        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+    },
+    {
+        "id": "gldas_soil_moisture",
+        "name": "GLDAS Noah soil moisture",
+        "name_fr": "Humidité du sol GLDAS Noah",
+        "unit": "kg m⁻²",
+        "definition": "Monthly soil moisture from the NASA GLDAS Noah land model.",
+        "definition_fr": "Humidité mensuelle du sol issue du modèle terrestre NASA GLDAS Noah.",
+        "period": "2000 onward",
+        "limitations": "Land-surface model output; not a direct satellite measurement.",
+        "source": "NASA GLDAS Noah v2.1",
+        "short_name": "GLDAS_NOAH025_M",
+        "status": "blocked_eula",
+        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+    },
+    {
+        "id": "gpm_precipitation",
+        "name": "GPM IMERG monthly precipitation",
+        "name_fr": "Précipitations mensuelles GPM IMERG",
+        "unit": "mm/month",
+        "definition": "Monthly precipitation from the NASA GPM IMERG product.",
+        "definition_fr": "Précipitations mensuelles issues du produit NASA GPM IMERG.",
+        "period": "2000 onward",
+        "limitations": (
+            "Satellite precipitation estimates; uncertainty varies by surface and regime."
+        ),
+        "source": "NASA GPM IMERG v07",
+        "short_name": "GPM_3IMERGM",
+        "status": "blocked_eula",
+        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+    },
+]
 
 REGIONS = [
     RegionDefinition(
@@ -102,21 +199,28 @@ def _clean(value: object) -> object:
 
 
 def _check_variable(variable: str) -> None:
-    if variable != VARIABLE["id"]:
-        raise HTTPException(status_code=404, detail="This MVP currently supports GISTEMP only.")
+    if variable not in VARIABLE_CONFIG:
+        raise HTTPException(status_code=404, detail="Unknown scientific variable.")
 
 
-def _format_result(result: dict[str, object], label: str, source: str) -> dict[str, object]:
+def _dataset_path(variable: str) -> Path:
+    return DATASET_PATH if variable == "gistemp_tas_anom" else VARIABLE_CONFIG[variable]["path"]
+
+
+def _format_result(
+    result: dict[str, object], label: str, source: str, variable_id: str = "gistemp_tas_anom"
+) -> dict[str, object]:
+    config = VARIABLE_CONFIG[variable_id]
     trend = result["trend"]
     assert isinstance(trend, dict)
     time_values = result.get("time", [])
     anomalies = result.get("anomaly", [])
     if isinstance(time_values, list) and isinstance(anomalies, list):
         result["break"] = analyze_pettitt(np.asarray(anomalies, dtype=float), time_values)
-    result["variable"] = VARIABLE["id"]
+    result["variable"] = variable_id
     result["label"] = label
     result["source"] = source
-    result["unit"] = VARIABLE["unit"]
+    result["unit"] = config["unit"]
     result["summary"] = make_summary(
         label,
         trend["slope_ols"],
@@ -124,7 +228,7 @@ def _format_result(result: dict[str, object], label: str, source: str) -> dict[s
         trend["slope_ols_hi"],
         trend["p_ols"],
         trend["p_mk"],
-        "K/year",
+        config["rate_unit"],
         result.get("break"),
     )
     if time_values:
@@ -142,7 +246,11 @@ def _format_result(result: dict[str, object], label: str, source: str) -> dict[s
 
 
 def _from_values(
-    values: np.ndarray, dates: np.ndarray, label: str, source: str
+    values: np.ndarray,
+    dates: np.ndarray,
+    label: str,
+    source: str,
+    variable_id: str = "gistemp_tas_anom",
 ) -> dict[str, object]:
     adjusted, seasonal = deseasonalize_monthly(values)
     result: dict[str, object] = {
@@ -152,7 +260,7 @@ def _from_values(
         "anomaly": adjusted.tolist(),
         "trend": analyze_series(adjusted),
     }
-    return _format_result(result, label, source)
+    return _format_result(result, label, source, variable_id)
 
 
 @app.get("/api/health")
@@ -162,7 +270,35 @@ async def health() -> dict[str, str]:
 
 @app.get("/api/variables", response_model=list[VariableInfo])
 async def variables() -> list[dict[str, object]]:
-    return [VARIABLE]
+    return [item for item in await catalog() if item["status"] == "analysis_ready"]
+
+
+@app.get("/api/catalog")
+async def catalog() -> list[dict[str, object]]:
+    """Return verified scientific products and honest integration states."""
+    records = [dict(item) for item in CATALOG]
+    for item in records:
+        config = VARIABLE_CONFIG.get(item["id"])
+        if str(item["id"]).startswith("modis_"):
+            raw_count = len(list(Path("data/raw/modis/mod13c2").glob("MOD13C2.A*.061.*.hdf")))
+            if raw_count > 1:
+                item["status"] = "acquiring"
+                item["status_detail"] = (
+                    f"{raw_count} of 319 monthly granules downloaded; "
+                    "preprocessing and trend products pending."
+                )
+        if config and _dataset_path(str(item["id"])).exists():
+            tile_meta = Path("data/tiles") / item["id"] / "full" / "palette.json"
+            trend_data = Path("data/processed") / item["id"] / "trend_full.zarr"
+            if tile_meta.is_file() and trend_data.exists():
+                item["status"] = "analysis_ready"
+                item["status_detail"] = "Time series, trend products, and map tiles are available."
+            elif item["id"] != VARIABLE["id"]:
+                item["status"] = "series_processed"
+                item["status_detail"] = (
+                    "Processed time series is available; trend maps are not generated yet."
+                )
+    return records
 
 
 @app.get("/api/suggest", response_model=list[Suggestion])
@@ -191,6 +327,23 @@ async def suggest(theme: str = "climate", place: str = "") -> list[Suggestion]:
                 region_id=region_match.id if region_match else None,
             )
         ]
+    if theme.lower() in {"vegetation", "plants", "forest"}:
+        ndvi = next(item for item in await catalog() if item["id"] == "modis_ndvi")
+        ready = ndvi["status"] == "analysis_ready"
+        return [
+            Suggestion(
+                variable="modis_ndvi",
+                name=str(ndvi["name"]),
+                definition=str(ndvi["definition"]),
+                available=ready,
+                message=(
+                    f"Analyze MODIS NDVI for {place or 'your selected region'}."
+                    if ready
+                    else str(ndvi["status_detail"])
+                ),
+                region_id=region_match.id if region_match else None,
+            )
+        ]
     return [
         Suggestion(
             variable=VARIABLE["id"],
@@ -213,11 +366,24 @@ async def regions() -> list[RegionDefinition]:
 @app.post("/api/region", response_model=AnalysisResponse)
 async def region_analysis(request: RegionRequest) -> dict[str, object]:
     _check_variable(request.variable)
+    config = VARIABLE_CONFIG[request.variable]
+    dataset_path = _dataset_path(request.variable)
+    if not dataset_path.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="This variable's processed time series is not installed.",
+        )
     try:
-        result = analyze_region(request.bounds, request.start, request.end, DATASET_PATH)
+        result = analyze_region(
+            request.bounds,
+            request.start,
+            request.end,
+            dataset_path,
+            str(config["field"]),
+        )
     except (ValueError, OSError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
-    return _format_result(result, request.label, "NASA GISS GISTEMP v4")
+    return _format_result(result, request.label, str(config["source"]), request.variable)
 
 
 @app.get("/api/point", response_model=AnalysisResponse)
@@ -229,10 +395,15 @@ async def point_analysis(
     end: str | None = None,
 ) -> dict[str, object]:
     _check_variable(variable)
-    if not DATASET_PATH.exists():
-        raise HTTPException(status_code=503, detail="Processed GISTEMP data are not installed.")
-    with xr.open_zarr(DATASET_PATH) as dataset:
-        selected = dataset.temperature_anomaly.sel(lat=lat, lon=lon, method="nearest")
+    config = VARIABLE_CONFIG[variable]
+    dataset_path = _dataset_path(variable)
+    if not dataset_path.exists():
+        raise HTTPException(
+            status_code=503,
+            detail="This variable's processed time series is not installed.",
+        )
+    with xr.open_zarr(dataset_path) as dataset:
+        selected = dataset[str(config["field"])].sel(lat=lat, lon=lon, method="nearest")
         if start:
             selected = selected.sel(time=slice(start, None))
         if end:
@@ -244,7 +415,8 @@ async def point_analysis(
         values,
         dates,
         f"({location['lat']:.0f}°, {location['lon']:.0f}°)",
-        "NASA GISS GISTEMP v4",
+        str(config["source"]),
+        variable,
     )
     result["location"] = location
     return result
@@ -253,7 +425,8 @@ async def point_analysis(
 @app.get("/api/trend/{variable}", response_model=TrendMapResponse)
 async def trend_layer(variable: str, window: str = "full") -> dict[str, object]:
     _check_variable(variable)
-    if window not in VARIABLE["windows"]:
+    config = VARIABLE_CONFIG[variable]
+    if window not in config["windows"]:
         raise HTTPException(status_code=422, detail="Unknown time window.")
     tile_dir = Path("data/tiles") / variable / window
     metadata_path = tile_dir / "palette.json"
@@ -286,7 +459,10 @@ async def trend_layer(variable: str, window: str = "full") -> dict[str, object]:
 @app.get("/tiles/{variable}/{window}/{layer}/{z}/{x}/{y}.png")
 async def map_tile(variable: str, window: str, layer: str, z: int, x: int, y: int) -> Response:
     _check_variable(variable)
-    if window not in VARIABLE["windows"] or layer not in {"slope", "nonsignificant"}:
+    if window not in VARIABLE_CONFIG[variable]["windows"] or layer not in {
+        "slope",
+        "nonsignificant",
+    }:
         raise HTTPException(status_code=404, detail="Map tile not found.")
     if not 0 <= z <= 5 or not 0 <= x < (1 << z) or not 0 <= y < (1 << z):
         raise HTTPException(status_code=404, detail="Map tile not found.")
@@ -315,6 +491,7 @@ async def export_product(
 ) -> Response:
     """Export a regional series as CSV or a precomputed map as PNG/GeoTIFF."""
     _check_variable(variable)
+    config = VARIABLE_CONFIG[variable]
     if format == "csv":
         coordinates = (west, south, east, north)
         if any(value is None for value in coordinates):
@@ -324,23 +501,32 @@ async def export_product(
             )
         bounds = (west, south, east, north)
         try:
-            series = analyze_region(bounds, start, end, DATASET_PATH)  # type: ignore[arg-type]
+            series = analyze_region(
+                bounds,
+                start,
+                end,
+                _dataset_path(variable),  # type: ignore[arg-type]
+                str(config["field"]),
+            )  # type: ignore[arg-type]
         except (ValueError, OSError) as error:
             raise HTTPException(status_code=422, detail=str(error)) from error
         body = io.StringIO(newline="")
         writer = csv.writer(body)
-        writer.writerow(["month", "value_K", "seasonal_cycle_K", "deseasonalized_anomaly_K"])
+        unit = str(config["unit"])
+        writer.writerow(
+            ["month", f"value_{unit}", f"seasonal_cycle_{unit}", f"deseasonalized_anomaly_{unit}"]
+        )
         writer.writerows(
             zip(series["time"], series["value"], series["seasonal"], series["anomaly"], strict=True)
         )
         return Response(
             content=body.getvalue(),
             media_type="text/csv; charset=utf-8",
-            headers={"Content-Disposition": "attachment; filename=gistemp-region.csv"},
+            headers={"Content-Disposition": f"attachment; filename={variable}-region.csv"},
         )
 
     if format == "tif":
-        if window not in VARIABLE["windows"]:
+        if window not in config["windows"]:
             raise HTTPException(status_code=404, detail="Map export not found.")
         path = Path("data/processed") / variable / f"trend_{window}.tif"
         if not path.is_file():
@@ -348,10 +534,10 @@ async def export_product(
         return Response(
             content=path.read_bytes(),
             media_type="image/tiff",
-            headers={"Content-Disposition": f"attachment; filename=gistemp-{window}.tif"},
+            headers={"Content-Disposition": f"attachment; filename={variable}-{window}.tif"},
         )
 
-    if window not in VARIABLE["windows"] or layer not in {"slope", "nonsignificant"}:
+    if window not in config["windows"] or layer not in {"slope", "nonsignificant"}:
         raise HTTPException(status_code=404, detail="Map export not found.")
     path = Path("data/tiles") / variable / window / f"{layer}.png"
     if not path.is_file():
@@ -359,7 +545,7 @@ async def export_product(
     return Response(
         content=path.read_bytes(),
         media_type="image/png",
-        headers={"Content-Disposition": f"attachment; filename=gistemp-{window}-{layer}.png"},
+        headers={"Content-Disposition": f"attachment; filename={variable}-{window}-{layer}.png"},
     )
 
 
@@ -373,6 +559,10 @@ async def compare_regions(
     lookup = {item.id: item for item in REGIONS}
     if a not in lookup or b not in lookup:
         raise HTTPException(status_code=404, detail="Unknown predefined region.")
-    left = await region_analysis(RegionRequest(bounds=lookup[a].bounds, label=lookup[a].name))
-    right = await region_analysis(RegionRequest(bounds=lookup[b].bounds, label=lookup[b].name))
+    left = await region_analysis(
+        RegionRequest(variable=variable, bounds=lookup[a].bounds, label=lookup[a].name)
+    )
+    right = await region_analysis(
+        RegionRequest(variable=variable, bounds=lookup[b].bounds, label=lookup[b].name)
+    )
     return {"a": left, "b": right}

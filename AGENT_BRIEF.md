@@ -49,13 +49,15 @@ Une réponse qui fait à la fois la visualisation et l'analyse couvre tout le p�
 3. **Parcours guidé** en quelques questions, définitions simples, info-bulles sur les termes statistiques, et **deux démos guidées** jouables dans l'application.
 4. **Régions** : régions prédéfinies (désert, forêt tropicale, estuaire, grande ville…) et dessin libre, avec moyenne pondérée par la surface. Stocker les données en Zarr chunké pour lire une emprise rapidement (temps complet, blocs spatiaux d'environ 30 x 30 mailles).
 5. **Tendance non significative** : afficher « pas (encore) significatif », expliquer ce que cela veut dire et montrer l'effet d'une période plus longue ou plus courte.
-6. **Priorité des variables** : celles citées par le défi (MERRA-2, GLDAS, GPM, MODIS, AIRS, OMI) passent avant GRACE ou NSIDC, sauf GISTEMP qui reste le premier jeu de données (léger et facile à valider).
+6. **Priorité des variables** : couvrir plusieurs domaines du défi avant les fonctions différenciatrices : GISTEMP pour le climat, MERRA-2/GLDAS/GPM pour précipitations et eau terrestre, MODIS pour la végétation, puis AIRS/OMI pour atmosphère et qualité de l'air. GISTEMP reste le premier jeu ingéré et validé, mais ne constitue pas à lui seul le produit final.
+
+**Décision de portée (mise à jour par le responsable du projet, 2026-11-01)** : la version livrable doit analyser plusieurs variables NASA, et non un MVP limité à GISTEMP. Viser au minimum trois variables réellement acquises, validées et analysables, dont GISTEMP et des mesures couvrant au moins deux autres domaines du défi. Continuer avec toutes les variables prioritaires dont l'accès, le volume et les ressources de calcul le permettent. Une variable ne compte comme prise en charge qu'après acquisition réelle, citation NASA complète, prétraitement, analyse, API, interface et tests ; une simple entrée de catalogue ne compte pas.
 
 ## 2. Règles de travail (obligatoires)
 
 1. **Autonomie, mais pas d'invention.** Ne fabrique jamais de données, de chiffres, de références ou de liens. Si une donnée est inaccessible, dis-le et applique le plan B prévu.
 2. **Vérifie avant d'utiliser.** Les noms de produits NASA (`short_name`), URLs et versions changent : confirme-les par une requête réelle (CMR/earthaccess) avant de les écrire dans le code ou la doc.
-3. **MVP d'abord.** Une boucle complète sur **une seule variable (GISTEMP)** avant toute extension. Aucun « différenciateur » avant que le MVP soit déployé et fonctionnel.
+3. **Produit multi-variable d'abord.** GISTEMP est la première chaîne de référence, pas une limite de portée ni un prérequis de déploiement avant les autres variables. Étendre ensuite le même parcours complet aux produits prioritaires vérifiés par CMR/Earthdata : données réelles, Zarr, tendances, carte, API, interface et tests. Aucun produit non vérifié ne doit être affiché comme disponible.
 4. **Reproductibilité.** Tout se lance par des commandes documentées (`make`/scripts). Versions épinglées. Graines aléatoires fixées.
 5. **Tests.** Chaque module statistique a des tests. Pas de fusion de code qui casse les tests.
 6. **Petits commits** avec messages clairs. Une branche par jalon, merge sur `main` quand le jalon est validé.
@@ -159,15 +161,17 @@ Format par entrée :
 
 ### Jeux de données (priorités)
 
+Les priorités ci-dessous sont des cibles, pas des `short_name` confirmés. Avant intégration, effectuer une requête réelle `earthaccess.search_datasets`, sélectionner une version adaptée, inspecter sa variable scientifique et sa temporalité, puis vérifier ses URLs de service et l'accès à des granules. Inscrire uniquement les valeurs obtenues dans le catalogue. Toute variable disponible doit suivre le parcours complet multi-variable ; si l'accès ou les ressources manquent, noter le blocage et continuer les autres.
+
 | Priorité | Variable | Source | Lien |
 | --- | --- | --- | --- |
-| **P0 (MVP)** | Température de surface (grille, anomalies) | GISTEMP | https://data.giss.nasa.gov/gistemp/ |
-| **P0+** | Température à 2 m, précipitations, évaporation (réanalyse mensuelle) | MERRA-2 | https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2/ |
-| P1 | Humidité du sol, évapotranspiration, ruissellement | GLDAS | https://ldas.gsfc.nasa.gov/gldas |
-| P1 | Précipitations | GPM IMERG (mensuel) | https://gpm.nasa.gov/data/imerg |
-| P2 | Végétation (NDVI) | MODIS MOD13 | https://lpdaac.usgs.gov/products/mod13a3v061/ |
-| P2 | Température et humidité de l'atmosphère par niveaux | AIRS | https://airs.jpl.nasa.gov/ |
-| P2 | Ozone, dioxyde d'azote | OMI | https://aura.gsfc.nasa.gov/omi.html |
+| **P0** | Anomalie de température de surface (référence de validation) | GISTEMP | https://data.giss.nasa.gov/gistemp/ |
+| **P0** | Température à 2 m et précipitations/évaporation de surface (produits mensuels) | MERRA-2 | https://gmao.gsfc.nasa.gov/reanalysis/MERRA-2/ |
+| **P0** | Humidité du sol, évapotranspiration ou ruissellement (produit mensuel) | GLDAS | https://ldas.gsfc.nasa.gov/gldas |
+| **P0** | Précipitations mensuelles | GPM IMERG | https://gpm.nasa.gov/data/imerg |
+| **P1** | Végétation (NDVI/EVI mensuel) | MODIS MOD13 | https://lpdaac.usgs.gov/products/mod13a3v061/ |
+| **P1** | Température ou humidité atmosphérique mensuelle | AIRS | https://airs.jpl.nasa.gov/ |
+| **P1** | Ozone ou dioxyde d'azote | OMI | https://aura.gsfc.nasa.gov/omi.html |
 | P2 | Masse d'eau terrestre | GRACE / GRACE-FO | https://grace.jpl.nasa.gov/ |
 | P3 | Glace de mer | NSIDC | https://nsidc.org/data/g02135 |
 | P3 | CO₂ | OCO-2 / OCO-3 | https://oco.jpl.nasa.gov/ |
@@ -184,7 +188,7 @@ Format par entrée :
 
 **Giovanni** (https://giovanni.gsfc.nasa.gov/giovanni/) génère des séries temporelles régionales : utilise-le comme **référence de validation** de tes propres séries.
 
-**Résolution** : mensuel par défaut. Le quotidien n'est ajouté qu'après le MVP, pour une ou deux variables, et agrégé par région.
+**Résolution** : mensuel par défaut pour toutes les variables. L'interface et les méthodes doivent exposer pour chaque variable sa période, sa fréquence, son unité, sa grille native et ses limites ; les conversions et ré-échantillonnages doivent rester documentés.
 
 ## 8. Prétraitement (jalon M1)
 
@@ -304,10 +308,10 @@ FastAPI, schémas Pydantic, documentation OpenAPI auto (`/docs`). CORS limité a
 
 **Public visé** : lycéens, étudiants et grand public avec un peu de bagage scientifique. Chaque variable a une **définition en une phrase**. Chaque terme statistique (tendance, p-value, intervalle de confiance, significatif) a une **info-bulle en langage simple**. Les résumés évitent le jargon.
 
-### M6 – MVP (écrans indispensables)
+### M6 – Explorateur multi-variable (écrans indispensables)
 
 1. **Assistant « détective »** : deux ou trois questions (quel thème : climat, eau, végétation, air ? quel lieu : région prédéfinie ou à dessiner ?) qui proposent des variables avec leur définition simple.
-2. **Sélecteur de variable** : description, unité, période, limites.
+2. **Sélecteur de variable** alimenté par le catalogue des produits réellement intégrés : description, unité, période, fréquence, résolution et limites. Les variables annoncées mais pas encore accessibles restent identifiées comme indisponibles et ne déclenchent pas de fausse analyse.
 3. **Choix de la région** : régions prédéfinies (désert, forêt tropicale, estuaire, grande ville…) ou rectangle/polygone dessiné sur la carte.
 4. **Série temporelle de la région** (ECharts) : série brute, cycle saisonnier retiré (anomalies), droite de tendance, période réglable.
 5. **Résultats statistiques en clair** : pente avec IC 95 %, test t et Mann-Kendall, verdict « significatif » ou « pas (encore) significatif », phrase quoi / où / combien / significatif. Si le résultat n'est pas significatif, expliquer qu'une période plus longue pourrait changer le verdict.
@@ -316,13 +320,13 @@ FastAPI, schémas Pydantic, documentation OpenAPI auto (`/docs`). CORS limité a
 8. **Deux démos guidées** : boutons « regarder un exemple » qui rejouent un parcours complet pas à pas.
 9. **Page Méthodes et validation** et crédits NASA.
 
-### M7 – Différenciateurs (seulement après déploiement du MVP)
+### M7 – Fonctions avancées (après le déploiement de l'explorateur multi-variable)
 
 10. **Mode « tendances opposées »** : carte des classes de signe et comparaison de deux régions (clic ou polygone).
 11. **Mode Rigoureux** dans l'interface (autocorrélation, FDR) avec explication simple.
 12. **Détection de rupture** affichée sur le graphique.
 13. **Export** (CSV, PNG, GeoTIFF).
-14. **Extension** aux variables P1/P2 du catalogue et option de données quotidiennes.
+14. **Extension facultative** aux produits P2/P3 non intégrés et aux données quotidiennes.
 
 **Performances** : rendu carte fluide ; premier affichage < 3 s ; clic point < 1 s. Tests `vitest` sur les stores et utilitaires ; un test de bout en bout léger (Playwright, https://playwright.dev/) sur le parcours principal si le temps le permet.
 
@@ -370,18 +374,18 @@ Chaque scénario est aussi une **démo guidée** jouable dans l'application (le 
 | Jalon | Contenu | Priorité |
 | --- | --- | --- |
 | M0 | Dépôt, environnement, accès Earthdata | MVP |
-| M1 | Ingestion et prétraitement **GISTEMP** (Zarr) | MVP |
-| M1b | Ajout de **MERRA-2** (température, précipitations) et, si possible, **GLDAS** | MVP+ |
-| M2 | Séries régionales pondérées, tendance Base (MCO + test t, Mann-Kendall + Sen, IC) et niveau Rigoureux, tests | MVP |
+| M1 | Ingestion et prétraitement **GISTEMP** (Zarr), premier adaptateur de données | MVP |
+| M1b | Intégration multi-variable des produits P0/P1 vérifiés et accessibles (MERRA-2, GLDAS, GPM, MODIS, AIRS, OMI selon ressources) | MVP |
+| M2 | Séries régionales pondérées et moteur commun : tendance Base (MCO + test t, Mann-Kendall + Sen, IC), niveau Rigoureux et tests par variable/unité | MVP |
 | M3 | Validation (GISS, Giovanni) et notebook | MVP |
 | M4 | Tuiles et palette | MVP |
 | M5 | API, dont `/region`, `/regions`, `/suggest` | MVP |
-| M6 | Frontend MVP : assistant, régions, série temporelle, résultats en clair, carte, deux démos guidées | MVP |
-| M8 | **Déploiement du MVP** | MVP |
-| M7 | Différenciateurs (tendances opposées, mode Rigoureux, rupture, export, variables P1/P2) | Après M8 |
+| M6 | Frontend multi-variable : sélecteur catalogue, assistant, régions, séries, résultats, cartes et deux démos guidées | MVP |
+| M8 | **Déploiement de l'explorateur multi-variable** | MVP |
+| M7 | Fonctions avancées (mode Rigoureux enrichi, rupture affichée, export avancé, produits P2/P3 restants) | Après M8 |
 | M9 | Documentation, vidéo, présentation | Obligatoire |
 
-**Règle** : ne démarre M7 qu'après M8. Si le temps manque, coupe dans cet ordre : P3 → P2 → export → EOF/PCA → rupture. Ne coupe jamais : région → série temporelle → tendance + test de significativité, validation, résumé automatique, stippling, démo en ligne.
+**Règle** : les fonctions avancées M7 attendent M8, mais l'intégration des variables prioritaires P0/P1 fait partie du produit attendu avant déploiement. Si le temps ou l'accès manque, prioriser au moins trois variables NASA réellement intégrées couvrant plusieurs domaines, puis consigner chaque produit restant comme bloqué avec la raison exacte. Ne jamais afficher un produit inaccessible comme disponible ni fabriquer de données ou de résultats.
 
 ## 17. Définition de « terminé »
 
@@ -404,8 +408,11 @@ Chaque scénario est aussi une **démo guidée** jouable dans l'application (le 
 
 ```
 Lis AGENT_BRIEF.md en entier, en commençant par la section 1 bis (exigences officielles du défi), qui prime en cas de conflit. Tu es l'ingénieur principal de ce projet.
-Commence par le jalon M0, puis enchaîne M1 à M6 et M8 dans l'ordre pour
-livrer un MVP déployé avec GISTEMP, avant toute extension. Respecte les
+Commence par M0, puis enchaîne M1 à M6 et M8 dans l'ordre pour livrer un
+explorateur multi-variable déployé, avec GISTEMP comme première chaîne mais
+pas comme unique variable. Intègre les produits prioritaires réellement
+accessibles et validés ; vise au moins trois variables couvrant plusieurs
+domaines du défi. Respecte les
 règles de la section 2 : ne fabrique aucune donnée ni référence, vérifie
 chaque URL et chaque short_name par une requête réelle, écris des tests,
 fais des commits fréquents et tiens docs/PROGRESS.md à jour. Quand il te

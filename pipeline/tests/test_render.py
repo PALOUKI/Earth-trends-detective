@@ -28,7 +28,9 @@ def test_render_builds_xyz_slope_and_stipple_tiles(tmp_path) -> None:
     )
     dataset.to_zarr(source, zarr_format=2)
 
-    metadata = render_trend_map(source, tmp_path / "output", max_zoom=1)
+    metadata = render_trend_map(
+        source, tmp_path / "output", max_zoom=1, slope_unit="index/year"
+    )
 
     assert (tmp_path / "output/slope.png").read_bytes().startswith(b"\x89PNG")
     assert (tmp_path / "output/nonsignificant.png").read_bytes().startswith(b"\x89PNG")
@@ -42,7 +44,7 @@ def test_render_builds_xyz_slope_and_stipple_tiles(tmp_path) -> None:
     assert metadata["minzoom"] == 0
     assert metadata["maxzoom"] == 1
     saved = json.loads((tmp_path / "output/palette.json").read_text())
-    assert saved["slope_unit"] == "K/year"
+    assert saved["slope_unit"] == "index/year"
     assert saved["slope_method"] == "OLS linear trend"
     assert saved["tile_scheme"] == "XYZ / WebMercatorQuad"
 

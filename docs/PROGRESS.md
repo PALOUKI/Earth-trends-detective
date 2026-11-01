@@ -2,7 +2,7 @@
 
 Updated: 2026-11-01
 
-## Current milestone: M6 — frontend MVP
+## Current milestone: M1b — integration multi-variable (en cours)
 
 - [x] Read the full `AGENT_BRIEF.md`; section 1 bis governs scope and sequencing.
 - [x] Confirmed the GISTEMP v4 download page and selected gridded NetCDF product are published by NASA GISS. The official compressed file URL is `https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz`.
@@ -10,10 +10,18 @@ Updated: 2026-11-01
 - [x] `uv sync --all-groups` succeeds with Python 3.11; pytest and Ruff pass locally.
 - [x] Earthdata environment login succeeded and a live CMR search request completed; CMR returned zero GISTEMP records, consistent with GISTEMP being served directly by NASA GISS and not cataloged here as a CMR granule product.
 - [ ] Deployment server/domain credentials are not available; M8 deployment cannot be completed until an endpoint and deployment access are available.
+- [x] Portée corrigée selon l'énoncé officiel : l'objectif livré couvre plusieurs variables NASA, pas GISTEMP seul.
+- [x] Requête CMR réelle : MOD13C2 v061 trouvé et un granule mondial de janvier 2024 téléchargé (94 485 525 octets). Le fichier révèle NDVI/EVI mensuels à 0,05°, facteur d'échelle 1/10000 et variable de qualité pixel.
+- [x] Dépendance HDF4 `pyhdf==0.11.6` ajoutée ; adaptateur MOD13C2 NDVI/EVI écrit pour masquer les pixels Fill et rangs qualité >1, agréger en grille 2° et produire Zarr.
+- [x] Tests unitaires de conversion/masquage/agrégation MODIS : 2 passés.
+- [x] CMR interrogé en direct : 319 granules mensuels de février 2000 à août 2026. Téléchargement autorisé et lancé ; l'acquisition est toujours en cours.
+- [x] Pipeline tendances/tuiles, extraction régionale, sérialisation API et sélecteur d'interface généralisés pour les identifiants de variables ; les options MODIS restent désactivées jusqu'à la fin des tendances et des cartes.
+- [ ] L'adaptateur exige au moins 120 mois consécutifs ; tant que les 319 granules ne sont pas téléchargés, prétraités et cartographiés, NDVI/EVI ne sont pas encore proposés comme variables analysables.
+- [ ] Les requêtes GET réelles de MERRA-2, GLDAS, GPM, AIRS et OMI échouent avec `EULA Acceptance Failure` malgré l'authentification Earthdata. URL d'autorisation GES DISC transmise à l'utilisateur ; en attente d'acceptation avant nouvelle vérification.
 
 ## Decisions and blockers
 
-- MVP stays on GISTEMP only until M8, as required by the prioritized brief.
+- GISTEMP reste la seule variable activée dans l'interface jusqu'à ce que MODIS produise réellement sa série multi-annuelle, ses tendances et ses tuiles.
 - The project runtime is pinned to Python 3.11 (supported range 3.11–3.12); the current shell has Python 3.13, outside that project range.
 - NASA's current GISTEMP page exposes both a 2°×2° monthly anomaly NetCDF and compressed Zarr v3. The chosen source URL is the official NetCDF link; the live file has been downloaded and inspected.
 - No product `short_name` will be recorded for GISTEMP because it is retrieved from the official GISS public download, not CMR.
@@ -66,6 +74,7 @@ Updated: 2026-11-01
 - [x] `/api/trend` includes map-wide valid/significant/non-significant cell counts when its processed Zarr is present.
 - [x] Deterministic summaries are provided in English and French; OpenAPI docs are available at `/docs`.
 - [x] Async HTTP contract tests cover the catalog, health, map layers, regional analysis, and clicked point response.
+- [x] L'API expose un catalogue vérifié avec états `analysis_ready`, `sample_downloaded`, `acquiring` et `blocked_eula` ; les routes de série, point, tendance, tuiles et export sélectionnent leur stockage via l'identifiant variable.
 - [x] Tests use `httpx` ASGI calls and synthetic fixture datasets; all API endpoint tests pass.
 - [x] Warm GISTEMP point endpoint measured at 206–223 ms locally after an initial 575 ms cold call; the brief's <300 ms target is met after data/cache warm-up.
 - [x] CORS defaults to the local frontend origin and is configurable by `ALLOWED_ORIGINS` for deployment.
@@ -74,6 +83,7 @@ Updated: 2026-11-01
 
 - [x] Reviewed the supplied Stitch design system and explorer, wizard, and demo screens. Applied the NASA-blue palette, Inter typography, 8px spacing rhythm, analytical side panel, map workspace, and three-step investigation wizard.
 - [x] Implemented Vue 3 + Vite + TypeScript UI with MapLibre, ECharts, English default/French switch, region controls, rectangle drawing, period presets, point clicks, bilingual summaries, methods, and two GISTEMP guided examples as required for M6.
+- [x] Ajout d'un sélecteur issu du catalogue vérifié ; les variables ont un état explicite et restent non sélectionnables tant que leurs traitements et cartes ne sont pas disponibles. Les appels région/point/carte transmettent maintenant l'identifiant de variable.
 - [x] Replaced the dated MODIS true-color base image with GIBS `BlueMarble_NextGeneration`, verified in the live WMTS capabilities and by a real HTTP 200 tile request; GIBS remains geographic background imagery only.
 - [x] Trend tiles preserve the native GISTEMP grid with nearest-neighbor display resampling, reduced overlay opacity, and transparent missing cells; stipple marks remain crisp. These are display choices only; statistical source values are unchanged.
 - [x] Removed the M7 comparison control from the frontend before deployment; the comparison API route remains because section 12 lists it as an M5 endpoint.
@@ -82,6 +92,7 @@ Updated: 2026-11-01
 - [x] Deferred Hamed-Rao values from the MVP summary and main results; the advanced method remains documented and available in the API for the post-M8 interface.
 - [ ] Verify that the wizard's questions and answers form the required guided detective path, and that both required demos have checked sourced context and actual result verdicts.
 - [ ] Verify small-screen behavior and complete an actual browser walkthrough; these M6 acceptance checks remain outstanding.
+- [ ] M6 reste partiel jusqu'à ce que le premier produit en plus de GISTEMP soit analysable dans l'interface et que le parcours multi-variable soit vérifié dans un navigateur.
 - [x] Added frontend utility tests for rate/p-value formatting and fitted-line display. Direct npm dependencies are pinned; Node/npm versions are specified in `.nvmrc` and `package.json`.
 - [x] `npm install` succeeded; direct dependencies are pinned and `web/package-lock.json` is available for reproducible installs.
 - [x] `npm test` passes (4 frontend utility tests); `npm run build` passes type-checking and production bundling.
@@ -105,5 +116,5 @@ Updated: 2026-11-01
 - M2, M3, M4, M5, and M6 are partial; do not describe them as accepted until the unchecked requirements above pass.
 - Milestone branches exist for M2, M4, M5, and M6; only the M0/M1 baseline is on `main`. Do not merge incomplete milestones.
 - M8 has not started: the brief requires a public host, domain, deployment access, open ports 80/443, and an HTTPS end-to-end check. No alternative host has been selected.
-- Keep GISTEMP as the only scientific dataset until the M8 MVP is deployed and working.
+- Keep GISTEMP as the only *analysis-ready* variable until another real multi-year series passes ingestion, trend generation, API/UI integration, and tests. Do not wait for M8 to develop it.
 - Do not start or extend M7 before M8. The comparison and Rigorous result controls are not shown in the MVP frontend.

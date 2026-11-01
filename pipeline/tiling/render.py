@@ -118,6 +118,7 @@ def render_trend_map(
     output_dir: Path,
     scale_percentile: float = 98,
     max_zoom: int = 5,
+    slope_unit: str = "K/year",
 ) -> dict[str, object]:
     """Write slope and nonsignificance XYZ tiles for zooms zero through five."""
     if not 0 <= max_zoom <= 5:
@@ -159,7 +160,7 @@ def render_trend_map(
     )
     metadata: dict[str, object] = {
         "bounds": [[-180, 90], [180, 90], [180, -90], [-180, -90]],
-        "slope_unit": "K/year",
+        "slope_unit": slope_unit,
         "slope_method": "OLS linear trend",
         "significance_method": "Hamed-Rao modified Mann-Kendall with Benjamini-Hochberg FDR",
         "scale_min": -limit,

@@ -42,7 +42,7 @@ def analyze_region(
             series = series.sel(time=slice(start, None))
         if end:
             series = series.sel(time=slice(None, end))
-        raw = np.asarray(series.values, dtype=np.float64)
+        raw = np.asarray(series.compute(scheduler="synchronous").values, dtype=np.float64)
         adjusted, seasonal = deseasonalize_monthly(raw)
         result = analyze_series(adjusted)
         dates = series.time.values.astype("datetime64[M]").astype(str).tolist()

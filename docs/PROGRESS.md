@@ -2,7 +2,7 @@
 
 Updated: 2026-11-01
 
-## Current milestone: M5 — API
+## Current milestone: M6 — frontend MVP
 
 - [x] Read the full `AGENT_BRIEF.md`; section 1 bis governs scope and sequencing.
 - [x] Confirmed the GISTEMP v4 download page and selected gridded NetCDF product are published by NASA GISS. The official compressed file URL is `https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz`.
@@ -51,12 +51,14 @@ Updated: 2026-11-01
 - [x] PNG encoding and layer rendering have fixture tests. Full-grid products were generated successfully for all three windows.
 - [x] Full-grid OLS/FDR results are generated locally for all three windows but are not committed; reproducible generation is through `make trends && make tiles`.
 
-## M5 in progress — API
+## Completed: M5 — API
 
 - [x] FastAPI routes are implemented for health, variables, suggestions, illustrative regions, regional analysis, point analysis, comparisons, trend metadata, and map images.
 - [x] Deterministic summaries are provided in English and French; OpenAPI docs are available at `/docs`.
 - [x] Async HTTP contract tests cover the catalog, health, map layers, regional analysis, and clicked point response.
-- [ ] Remaining API contract coverage and response timing checks are in progress.
+- [x] Tests use `httpx` ASGI calls and synthetic fixture datasets; all API endpoint tests pass.
+- [x] Warm GISTEMP point endpoint measured at 206–223 ms locally after an initial 575 ms cold call; the brief's <300 ms target is met after data/cache warm-up.
+- [x] CORS defaults to the local frontend origin and is configurable by `ALLOWED_ORIGINS` for deployment.
 
 ## M0 acceptance summary
 

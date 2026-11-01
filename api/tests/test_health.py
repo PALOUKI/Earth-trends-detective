@@ -1,6 +1,34 @@
-from api.app.main import app, health
+import asyncio
+
+from httpx import ASGITransport, AsyncClient
+
+from api.app.main import app
+
+
+def _request(path: str):
+    async def run_request():
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            return await client.get(path)
+
+    return asyncio.run(run_request())
 
 
 def test_health_reports_service_status() -> None:
-    assert app.title == "Earth Trends Detective"
-    assert health() == {"status": "ok"}
+    response = _request("/api/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_catalog_suggestions_and_regions_have_contract_fields() -> None:
+    variables = _request("/api/variables")
+    regions = _request("/api/regions")
+    suggestions = _request("/api/suggest?theme=water")
+
+    assert variables.status_code == regions.status_code == suggestions.status_code == 200
+    assert variables.json()[0]["id"] == "gistemp_tas_anom"
+    assert "definition" in variables.json()[0]
+    assert regions.json()[0]["geometry_type"] == "illustrative_rectangle"
+    assert suggestions.json()[0]["available"] is False

@@ -31,6 +31,7 @@ class Suggestion(BaseModel):
     definition: str
     available: bool
     message: str
+    region_id: str | None = None
 
 
 class RegionDefinition(BaseModel):
@@ -61,6 +62,13 @@ class SummaryText(BaseModel):
     fr: str
 
 
+class BreakResult(BaseModel):
+    date: str
+    p: float
+    significant: bool
+    statistic: float
+
+
 class AnalysisResponse(BaseModel):
     variable: str
     label: str
@@ -74,6 +82,7 @@ class AnalysisResponse(BaseModel):
     seasonal: list[float | None]
     anomaly: list[float | None]
     trend: TrendStatistics
+    break_result: BreakResult | None = Field(default=None, alias="break")
     significant: bool
     summary: SummaryText
     caveats: list[str]
@@ -97,4 +106,5 @@ class TrendMapResponse(BaseModel):
     palette: dict[str, str]
     layers: dict[str, str]
     interpretation: str
+    statistics: dict[str, float | int] = Field(default_factory=dict)
     urls: dict[str, str] | None = None

@@ -19,6 +19,34 @@ Then start `make dev` in one terminal and `cd web && npm run dev` in another. Th
 
 See [docs/PROGRESS.md](docs/PROGRESS.md) for milestone status and known access needs.
 
+## Remote deployment
+
+After generating the GISTEMP trend products and map tiles, configure a host with Docker Compose, SSH access, a public DNS name pointed at it, and inbound ports 80/443 open. Then deploy with:
+
+```sh
+export DEPLOY_HOST=your-server.example
+export DEPLOY_USER=your-ssh-user
+export DEPLOY_SSH_KEY="$HOME/.ssh/id_ed25519"  # omit when your SSH agent is configured
+export SITE_DOMAIN=your-public-domain.example
+make deploy
+```
+
+The deployment script transfers the processed GISTEMP Zarr, trend COGs, and XYZ map tiles; it excludes the raw NASA download and local `.env`. It builds and starts the Compose services remotely and checks `https://<SITE_DOMAIN>/api/health`.
+
+## Remote deployment
+
+After generating the GISTEMP trend products and map tiles, configure a host with Docker Compose, SSH access, a public DNS name pointed at it, and inbound ports 80/443 open. Then deploy with:
+
+```sh
+export DEPLOY_HOST=your-server.example
+export DEPLOY_USER=your-ssh-user
+export DEPLOY_SSH_KEY="$HOME/.ssh/id_ed25519"  # omit when your SSH agent is configured
+export SITE_DOMAIN=your-public-domain.example
+make deploy
+```
+
+The deployment script transfers the processed GISTEMP Zarr, trend COGs, and XYZ map tiles; it excludes the raw NASA download and the local `.env`. It builds and starts the Compose services remotely and checks `https://<SITE_DOMAIN>/api/health`.
+
 ## Résumé français
 
 Détective des tendances du système terrestre est un outil pédagogique et reproductible. Le MVP commence par les anomalies mensuelles de température de surface NASA GISS GISTEMP v4 sur une grille de 2°. Il reliera une région choisie à sa série temporelle, estimera une tendance et présentera l’incertitude statistique en langage clair.

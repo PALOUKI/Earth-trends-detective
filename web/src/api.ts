@@ -44,6 +44,7 @@ export interface Analysis {
   seasonal: Array<number | null>
   anomaly: Array<number | null>
   trend: TrendInfo
+  break?: { date: string; p: number; significant: boolean; statistic: number } | null
   significant: boolean
   summary: { en: string; fr: string }
   caveats: string[]
@@ -57,6 +58,12 @@ export interface MapLayer {
   maxzoom: number
   palette: { negative: string; zero: string; positive: string }
   urls: { slope: string; nonsignificant: string }
+  statistics: {
+    valid_cells: number
+    significant_increase_cells: number
+    significant_decrease_cells: number
+    non_significant_cells: number
+  }
 }
 
 const apiBase = import.meta.env.VITE_API_BASE ?? ''

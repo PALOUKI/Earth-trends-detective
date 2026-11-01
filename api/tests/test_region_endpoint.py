@@ -55,9 +55,10 @@ def test_region_endpoint_returns_trend_summary_from_data(tmp_path, monkeypatch) 
                 "/api/compare?variable=gistemp_tas_anom&a=amazon&b=sahara"
             )
             docs = await client.get("/docs")
-            return regional, point, comparison, docs
+            suggestions = await client.get("/api/suggest?theme=climate&place=Amazon")
+            return regional, point, comparison, docs, suggestions
 
-    response, point, comparison, docs = asyncio.run(send_request())
+    response, point, comparison, docs, suggestions = asyncio.run(send_request())
     payload = response.json()
 
     assert response.status_code == 200
@@ -65,9 +66,13 @@ def test_region_endpoint_returns_trend_summary_from_data(tmp_path, monkeypatch) 
     assert payload["trend"]["slope_ols"] > 0
     assert set(payload["summary"]) == {"en", "fr"}
     assert payload["variable"] == "gistemp_tas_anom"
+    assert "break" in payload
+    assert payload["break"]["date"] in payload["time"]
     assert point.status_code == 200
     assert point.json()["location"] == {"lat": -1.0, "lon": -1.0}
     assert point.json()["period"] == {"start": "2000-01", "end": "2009-12"}
     assert comparison.status_code == 200
     assert set(comparison.json()) == {"a", "b"}
     assert docs.status_code == 200
+    assert suggestions.status_code == 200
+    assert suggestions.json()[0]["region_id"] == "amazon"

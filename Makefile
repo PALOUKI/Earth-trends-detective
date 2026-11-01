@@ -1,5 +1,7 @@
 .PHONY: setup ingest preprocess trends tiles test lint dev web-dev build deploy
 
+TRENDS_FLAGS ?=
+
 setup:
 	uv sync --all-groups
 
@@ -10,7 +12,7 @@ preprocess:
 	uv run python -m pipeline.cli preprocess gistemp_tas_anom
 
 trends:
-	uv run python -m pipeline.cli trends gistemp_tas_anom
+	uv run python -m pipeline.cli trends gistemp_tas_anom $(TRENDS_FLAGS)
 
 tiles:
 	uv run python -m pipeline.cli tiles gistemp_tas_anom
@@ -31,4 +33,4 @@ build:
 	cd web && npm run build
 
 deploy:
-	docker compose up --build -d
+	./deploy/deploy.sh

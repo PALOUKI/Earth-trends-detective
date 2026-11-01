@@ -11,12 +11,12 @@ def make_summary(
     p_ols: float | None,
     p_mk: float | None,
     unit: str = "K/year",
+    break_result: object | None = None,
 ) -> dict[str, str]:
     if slope is None or lo is None or hi is None:
         return {
             "en": (
-                f"There are not enough valid monthly observations for {label} "
-                "to estimate a trend."
+                f"There are not enough valid monthly observations for {label} to estimate a trend."
             ),
             "fr": (
                 f"Il n’y a pas assez d’observations mensuelles valides pour estimer "
@@ -49,15 +49,26 @@ def make_summary(
         f"Valeurs p : test t MCO={p_text(p_ols)}, Mann-Kendall={p_text(p_mk)}. "
         "La correction FDR spatiale ne s’applique pas à une seule région."
     )
+    break_en, break_fr = "", ""
+    if isinstance(break_result, dict):
+        break_date = break_result.get("date")
+        break_p = break_result.get("p")
+        if break_date is not None and break_p is not None:
+            p_formatted = p_text(float(break_p))
+            break_en = f" Pettitt's candidate change point is {break_date} (p={p_formatted})."
+            break_fr = (
+                f" Le point de rupture candidat de Pettitt est {break_date} (p={p_formatted})."
+            )
     return {
         "en": (
             f"Surface temperature anomaly {direction_en} in {label} by {slope:.4f} {unit} "
             f"(95% confidence interval {lo:.4f} to {hi:.4f}); the linear trend is "
-            f"{verdict_en} by the t test. {tests_en}{caveat_en}"
+            f"{verdict_en} by the t test. {tests_en}{break_en}{caveat_en}"
         ),
         "fr": (
             f"L’anomalie de température de surface a {direction_fr} dans {label} de "
             f"{slope:.4f} {unit} (intervalle de confiance à 95 % : {lo:.4f} à {hi:.4f}) ; "
-            f"la tendance linéaire est {verdict_fr} selon le test t. {tests_fr}{caveat_fr}"
+            f"la tendance linéaire est {verdict_fr} selon le test t. "
+            f"{tests_fr}{break_fr}{caveat_fr}"
         ),
     }

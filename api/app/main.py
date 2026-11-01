@@ -25,6 +25,7 @@ from api.app.schemas import (
 from api.app.summary import make_summary
 from pipeline.regions import DATASET_PATH, analyze_region
 from pipeline.trends.base import analyze_series, deseasonalize_monthly
+from pipeline.trends.breakpoint import analyze_pettitt
 
 load_dotenv()
 
@@ -108,6 +109,10 @@ def _check_variable(variable: str) -> None:
 def _format_result(result: dict[str, object], label: str, source: str) -> dict[str, object]:
     trend = result["trend"]
     assert isinstance(trend, dict)
+    time_values = result.get("time", [])
+    anomalies = result.get("anomaly", [])
+    if isinstance(time_values, list) and isinstance(anomalies, list):
+        result["break"] = analyze_pettitt(np.asarray(anomalies, dtype=float), time_values)
     result["variable"] = VARIABLE["id"]
     result["label"] = label
     result["source"] = source
@@ -120,13 +125,11 @@ def _format_result(result: dict[str, object], label: str, source: str) -> dict[s
         trend["p_ols"],
         trend["p_mk"],
         "K/year",
+        result.get("break"),
     )
-    time_values = result.get("time", [])
     if time_values:
         result["period"] = {"start": time_values[0], "end": time_values[-1]}
-    result["significant"] = bool(
-        trend["p_ols"] is not None and trend["p_ols"] < 0.05
-    )
+    result["significant"] = bool(trend["p_ols"] is not None and trend["p_ols"] < 0.05)
     result["caveats"] = [
         "Statistical association does not establish cause.",
         (
@@ -164,6 +167,16 @@ async def variables() -> list[dict[str, object]]:
 
 @app.get("/api/suggest", response_model=list[Suggestion])
 async def suggest(theme: str = "climate", place: str = "") -> list[Suggestion]:
+    normalized_place = place.strip().lower()
+    region_match = next(
+        (
+            item
+            for item in REGIONS
+            if normalized_place
+            and normalized_place in f"{item.id} {item.name} {item.name_fr}".lower()
+        ),
+        None,
+    )
     if theme.lower() in {"climate", "temperature", "warming"}:
         return [
             Suggestion(
@@ -173,8 +186,9 @@ async def suggest(theme: str = "climate", place: str = "") -> list[Suggestion]:
                 available=True,
                 message=(
                     f"Start with monthly temperature anomalies for "
-                    f"{place or 'your selected region'}."
+                    f"{region_match.name if region_match else place or 'your selected region'}."
                 ),
+                region_id=region_match.id if region_match else None,
             )
         ]
     return [
@@ -184,9 +198,9 @@ async def suggest(theme: str = "climate", place: str = "") -> list[Suggestion]:
             definition=VARIABLE["definition"],
             available=False,
             message=(
-                "This first release analyzes temperature only; other themes are not yet "
-                "available."
+                "This first release analyzes temperature only; other themes are not yet available."
             ),
+            region_id=region_match.id if region_match else None,
         )
     ]
 
@@ -248,6 +262,20 @@ async def trend_layer(variable: str, window: str = "full") -> dict[str, object]:
     import json
 
     metadata = json.loads(metadata_path.read_text())
+    trend_path = Path("data/processed") / variable / f"trend_{window}.zarr"
+    statistics: dict[str, float | int] = {}
+    if trend_path.exists():
+        with xr.open_zarr(trend_path) as trends:
+            classes = np.asarray(trends.sign_class.values, dtype=float)
+            valid = np.isfinite(np.asarray(trends.slope_ols.values, dtype=float))
+            valid_count = int(valid.sum())
+            statistics = {
+                "valid_cells": valid_count,
+                "significant_increase_cells": int(np.sum(classes == 1)),
+                "significant_decrease_cells": int(np.sum(classes == -1)),
+                "non_significant_cells": int(np.sum((classes == 0) & valid)),
+            }
+    metadata["statistics"] = statistics
     metadata["urls"] = {
         "slope": f"/tiles/{variable}/{window}/slope/{{z}}/{{x}}/{{y}}.png",
         "nonsignificant": f"/tiles/{variable}/{window}/nonsignificant/{{z}}/{{x}}/{{y}}.png",
@@ -275,7 +303,7 @@ async def map_tile(variable: str, window: str, layer: str, z: int, x: int, y: in
 @app.get("/api/export")
 async def export_product(
     variable: str = VARIABLE["id"],
-    format: Literal["csv", "png"] = "csv",
+    format: Literal["csv", "png", "tif"] = "csv",
     west: float | None = None,
     south: float | None = None,
     east: float | None = None,
@@ -285,7 +313,7 @@ async def export_product(
     window: str = "full",
     layer: str = "slope",
 ) -> Response:
-    """Export a regional monthly series as CSV or a precomputed map layer as PNG."""
+    """Export a regional series as CSV or a precomputed map as PNG/GeoTIFF."""
     _check_variable(variable)
     if format == "csv":
         coordinates = (west, south, east, north)
@@ -309,6 +337,18 @@ async def export_product(
             content=body.getvalue(),
             media_type="text/csv; charset=utf-8",
             headers={"Content-Disposition": "attachment; filename=gistemp-region.csv"},
+        )
+
+    if format == "tif":
+        if window not in VARIABLE["windows"]:
+            raise HTTPException(status_code=404, detail="Map export not found.")
+        path = Path("data/processed") / variable / f"trend_{window}.tif"
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="GeoTIFF export has not been generated.")
+        return Response(
+            content=path.read_bytes(),
+            media_type="image/tiff",
+            headers={"Content-Disposition": f"attachment; filename=gistemp-{window}.tif"},
         )
 
     if window not in VARIABLE["windows"] or layer not in {"slope", "nonsignificant"}:

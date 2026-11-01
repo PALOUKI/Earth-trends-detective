@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import csv
+import io
 import os
 from pathlib import Path
+from typing import Literal
 
 import numpy as np
 import xarray as xr
@@ -10,7 +13,15 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
-from api.app.schemas import RegionDefinition, RegionRequest, Suggestion
+from api.app.schemas import (
+    AnalysisResponse,
+    ComparisonResponse,
+    RegionDefinition,
+    RegionRequest,
+    Suggestion,
+    TrendMapResponse,
+    VariableInfo,
+)
 from api.app.summary import make_summary
 from pipeline.regions import DATASET_PATH, analyze_region
 from pipeline.trends.base import analyze_series, deseasonalize_monthly
@@ -108,7 +119,6 @@ def _format_result(result: dict[str, object], label: str, source: str) -> dict[s
         trend["slope_ols_hi"],
         trend["p_ols"],
         trend["p_mk"],
-        trend["p_value"],
         "K/year",
     )
     time_values = result.get("time", [])
@@ -147,7 +157,7 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/api/variables")
+@app.get("/api/variables", response_model=list[VariableInfo])
 async def variables() -> list[dict[str, object]]:
     return [VARIABLE]
 
@@ -186,7 +196,7 @@ async def regions() -> list[RegionDefinition]:
     return REGIONS
 
 
-@app.post("/api/region")
+@app.post("/api/region", response_model=AnalysisResponse)
 async def region_analysis(request: RegionRequest) -> dict[str, object]:
     _check_variable(request.variable)
     try:
@@ -196,7 +206,7 @@ async def region_analysis(request: RegionRequest) -> dict[str, object]:
     return _format_result(result, request.label, "NASA GISS GISTEMP v4")
 
 
-@app.get("/api/point")
+@app.get("/api/point", response_model=AnalysisResponse)
 async def point_analysis(
     variable: str = VARIABLE["id"],
     lat: float = Query(ge=-90, le=90),
@@ -226,7 +236,7 @@ async def point_analysis(
     return result
 
 
-@app.get("/api/trend/{variable}")
+@app.get("/api/trend/{variable}", response_model=TrendMapResponse)
 async def trend_layer(variable: str, window: str = "full") -> dict[str, object]:
     _check_variable(variable)
     if window not in VARIABLE["windows"]:
@@ -239,28 +249,81 @@ async def trend_layer(variable: str, window: str = "full") -> dict[str, object]:
 
     metadata = json.loads(metadata_path.read_text())
     metadata["urls"] = {
-        "slope": f"/api/maps/{variable}/{window}/slope.png",
-        "nonsignificant": f"/api/maps/{variable}/{window}/nonsignificant.png",
+        "slope": f"/tiles/{variable}/{window}/slope/{{z}}/{{x}}/{{y}}.png",
+        "nonsignificant": f"/tiles/{variable}/{window}/nonsignificant/{{z}}/{{x}}/{{y}}.png",
     }
     return metadata
 
 
-@app.get("/api/maps/{variable}/{window}/{layer}.png")
-async def map_image(variable: str, window: str, layer: str) -> Response:
+@app.get("/tiles/{variable}/{window}/{layer}/{z}/{x}/{y}.png")
+async def map_tile(variable: str, window: str, layer: str, z: int, x: int, y: int) -> Response:
     _check_variable(variable)
     if window not in VARIABLE["windows"] or layer not in {"slope", "nonsignificant"}:
-        raise HTTPException(status_code=404, detail="Map layer not found.")
-    path = Path("data/tiles") / variable / window / f"{layer}.png"
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Map layer has not been generated.")
+        raise HTTPException(status_code=404, detail="Map tile not found.")
+    if not 0 <= z <= 5 or not 0 <= x < (1 << z) or not 0 <= y < (1 << z):
+        raise HTTPException(status_code=404, detail="Map tile not found.")
+    path = Path("data/tiles") / variable / window / layer / str(z) / str(x) / f"{y}.png"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Map tile has not been generated.")
     return Response(
         content=path.read_bytes(),
         media_type="image/png",
-        headers={"Cache-Control": "public, max-age=86400"},
+        headers={"Cache-Control": "public, max-age=31536000"},
     )
 
 
-@app.get("/api/compare")
+@app.get("/api/export")
+async def export_product(
+    variable: str = VARIABLE["id"],
+    format: Literal["csv", "png"] = "csv",
+    west: float | None = None,
+    south: float | None = None,
+    east: float | None = None,
+    north: float | None = None,
+    start: str | None = None,
+    end: str | None = None,
+    window: str = "full",
+    layer: str = "slope",
+) -> Response:
+    """Export a regional monthly series as CSV or a precomputed map layer as PNG."""
+    _check_variable(variable)
+    if format == "csv":
+        coordinates = (west, south, east, north)
+        if any(value is None for value in coordinates):
+            raise HTTPException(
+                status_code=422,
+                detail="CSV export requires west, south, east, and north bounds.",
+            )
+        bounds = (west, south, east, north)
+        try:
+            series = analyze_region(bounds, start, end, DATASET_PATH)  # type: ignore[arg-type]
+        except (ValueError, OSError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        body = io.StringIO(newline="")
+        writer = csv.writer(body)
+        writer.writerow(["month", "value_K", "seasonal_cycle_K", "deseasonalized_anomaly_K"])
+        writer.writerows(
+            zip(series["time"], series["value"], series["seasonal"], series["anomaly"], strict=True)
+        )
+        return Response(
+            content=body.getvalue(),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": "attachment; filename=gistemp-region.csv"},
+        )
+
+    if window not in VARIABLE["windows"] or layer not in {"slope", "nonsignificant"}:
+        raise HTTPException(status_code=404, detail="Map export not found.")
+    path = Path("data/tiles") / variable / window / f"{layer}.png"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Map export has not been generated.")
+    return Response(
+        content=path.read_bytes(),
+        media_type="image/png",
+        headers={"Content-Disposition": f"attachment; filename=gistemp-{window}-{layer}.png"},
+    )
+
+
+@app.get("/api/compare", response_model=ComparisonResponse)
 async def compare_regions(
     variable: str = VARIABLE["id"],
     a: str = "amazon",

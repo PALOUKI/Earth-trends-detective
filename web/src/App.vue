@@ -24,7 +24,11 @@ const copy = {
     since2010: 'Since 2010', since2015: 'Since 2015', apply: 'Analyze region',
     chart: 'Regional time series', summary: 'Trend summary', loading: 'Analyzing GISTEMP…',
     loadingMap: 'Loading trend layer…', rate: 'Linear rate', confidence: '95% confidence interval',
+    pValueHelp: 'A p-value measures how unusual these data would be if there were no trend; it is not the probability that the result is true.',
+    confidenceHelp: 'The 95% interval gives a range of plausible linear rates under the model assumptions.',
+    significanceHelp: 'This label compares the OLS p-value with 0.05. It does not identify a cause.',
     significant: 'Significant', notSignificant: 'Not (yet) significant', insufficient: 'Not enough data',
+    longerPeriod: 'A longer time period could change this significance result.',
     ols: 'OLS t test', mk: 'Mann–Kendall', hr: 'Hamed–Rao',
     raw: 'Monthly anomaly', deseasoned: 'Deseasonalized', trend: 'Linear trend',
     guided: 'Guided investigation', demo: 'Try a guided example', demoTitle: 'Guided examples',
@@ -38,13 +42,13 @@ const copy = {
     disclaimer: 'A significant trend describes statistical evidence of change; it does not identify its cause.',
     aboutTitle: 'Earth Trend Detective', aboutText: 'An educational tool for exploring NASA Earth observations by place and time.',
     data: 'Data & credits', limitations: 'Limitations', periodShort: 'period', coordinates: 'Selected grid cell',
-    choose: 'Select', contrast: 'Compare regions', compare: 'Compare two areas', opposite: 'Different places can change at different rates.',
+    choose: 'Select',
     methodsIntro: 'The tool separates the regional analysis from the discovery map. Click a region or grid cell to see the full Base analysis.',
     m1: 'OLS fits a straight line through the deseasonalized monthly anomalies. The t test and 95% interval describe uncertainty under independent residuals.',
     m2: 'Mann–Kendall tests whether values tend to move in one direction. Sen’s slope gives a robust rate using pairwise slopes.',
     m3: 'Hamed–Rao adjusts the Mann–Kendall variance for serial dependence. The global map uses a fast OLS test followed by Benjamini–Hochberg FDR at 0.10.',
     validation: 'Validation against NASA’s published monthly global series: 561 months (1980–2026), 0.050 K RMSE; global slopes agree within 0.000001 K/year.',
-    mapWindow: 'Map window', compareNotReady: 'Choose two named areas to compare their regional trends.',
+    mapWindow: 'Map window',
     blankMap: 'Trend layer unavailable', point: 'Point', region: 'Region',
     dataFrequency: 'Monthly · 2° grid', fieldHelp: 'Choose an example area or drag over the map.',
     slopeLayer: 'OLS slope · K/year', nonsignificantLayer: 'dots = not significant', observations: 'months',
@@ -57,7 +61,11 @@ const copy = {
     since2010: 'Depuis 2010', since2015: 'Depuis 2015', apply: 'Analyser la région',
     chart: 'Série temporelle régionale', summary: 'Résumé de tendance', loading: 'Analyse de GISTEMP…',
     loadingMap: 'Chargement de la carte…', rate: 'Taux linéaire', confidence: 'Intervalle de confiance à 95 %',
+    pValueHelp: 'La valeur p indique à quel point ces données seraient inhabituelles en l’absence de tendance ; ce n’est pas la probabilité que le résultat soit vrai.',
+    confidenceHelp: 'L’intervalle à 95 % donne une plage de taux linéaires plausibles sous les hypothèses du modèle.',
+    significanceHelp: 'Cette étiquette compare la valeur p MCO au seuil de 0,05. Elle ne donne pas la cause.',
     significant: 'Significative', notSignificant: 'Pas (encore) significative', insufficient: 'Données insuffisantes',
+    longerPeriod: 'Une période plus longue pourrait changer ce résultat de significativité.',
     ols: 'Test t MCO', mk: 'Mann–Kendall', hr: 'Hamed–Rao',
     raw: 'Anomalie mensuelle', deseasoned: 'Désaisonnalisée', trend: 'Tendance linéaire',
     guided: 'Parcours guidé', demo: 'Voir un exemple guidé', demoTitle: 'Exemples guidés',
@@ -71,13 +79,13 @@ const copy = {
     disclaimer: 'Une tendance significative indique une preuve statistique de changement, pas sa cause.',
     aboutTitle: 'Détective des tendances terrestres', aboutText: 'Un outil pédagogique pour explorer les observations NASA selon le lieu et la période.',
     data: 'Données et crédits', limitations: 'Limites', periodShort: 'période', coordinates: 'Maille sélectionnée',
-    choose: 'Choisir', contrast: 'Comparer des régions', compare: 'Comparer deux zones', opposite: 'Les tendances peuvent varier selon les lieux.',
+    choose: 'Choisir',
     methodsIntro: 'L’outil distingue l’analyse régionale de la carte de repérage. Cliquez sur une région ou une maille pour afficher l’analyse complète.',
     m1: 'Les MCO ajustent une droite aux anomalies mensuelles désaisonnalisées. Le test t et l’intervalle à 95 % décrivent l’incertitude sous indépendance des résidus.',
     m2: 'Mann–Kendall teste si les valeurs évoluent dans une direction. La pente de Sen estime un taux robuste à partir des pentes entre paires.',
     m3: 'Hamed–Rao ajuste la variance Mann–Kendall à la dépendance temporelle. La carte utilise un test MCO rapide suivi de FDR Benjamini–Hochberg à 0,10.',
     validation: 'Validation avec la série mensuelle globale publiée par NASA : 561 mois (1980–2026), RMSE de 0,050 K ; les pentes mondiales diffèrent de moins de 0,000001 K/an.',
-    mapWindow: 'Période de la carte', compareNotReady: 'Choisissez deux zones pour comparer leurs tendances régionales.',
+    mapWindow: 'Période de la carte',
     blankMap: 'Carte de tendance indisponible', point: 'Point', region: 'Région',
     dataFrequency: 'Mensuel · grille de 2°', fieldHelp: 'Choisissez une zone ou tracez-la sur la carte.',
     slopeLayer: 'Pente MCO · K/an', nonsignificantLayer: 'points = non significatif', observations: 'mois',
@@ -98,7 +106,6 @@ const selectedLabel = ref('Amazon example box')
 const selectedPoint = ref<{ lat: number; lon: number } | null>(null)
 const period = ref<WindowId>('full')
 const analysis = ref<Analysis | null>(null)
-const comparison = ref<{ a: Analysis; b: Analysis } | null>(null)
 const loading = ref(false)
 const mapLoading = ref(false)
 const error = ref('')
@@ -215,15 +222,6 @@ function chooseDrawnRegion(bounds: [number, number, number, number]) {
   selectedBounds.value = bounds
   selectedLabel.value = locale.value === 'fr' ? 'Région dessinée' : 'Drawn region'
   void runAnalysis()
-}
-
-async function loadCompare() {
-  comparison.value = null
-  try {
-    comparison.value = await api.compare('amazon', 'sahara')
-  } catch (caught) {
-    error.value = caught instanceof Error ? caught.message : String(caught)
-  }
 }
 
 function beginWizard() {
@@ -358,28 +356,20 @@ onMounted(async () => {
               <button :class="{ selected: period === '2015-fin' }" @click="period = '2015-fin'">{{ t.since2015 }}</button>
             </div>
             <button class="button primary full-button" :disabled="loading" @click="runAnalysis">{{ loading ? t.loading : t.apply }}</button>
-            <button class="button compare-button" @click="loadCompare">⇄ {{ t.compare }}</button>
           </section>
 
           <section v-if="analysis" class="result-card">
-            <div class="result-heading"><span class="step-label">{{ t.summary }}</span><span class="verdict" :class="analysis.significant ? 'good' : 'caution'">{{ analysis.significant ? '✓' : '◷' }} {{ statusText }}</span></div>
+            <div class="result-heading"><span class="step-label">{{ t.summary }}</span><span class="verdict" :class="analysis.significant ? 'good' : 'caution'" :title="t.significanceHelp" :aria-label="t.significanceHelp">{{ analysis.significant ? '✓' : '◷' }} {{ statusText }}</span></div>
             <div class="rate-value">{{ formatRate(analysis.trend.slope_ols) }}</div>
             <div class="rate-label">{{ t.rate }} <span class="info" :title="t.m1">ⓘ</span></div>
-            <div class="confidence-row"><span>{{ t.confidence }}</span><strong>{{ formatRate(analysis.trend.slope_ols_lo) }} – {{ formatRate(analysis.trend.slope_ols_hi) }}</strong></div>
+            <div class="confidence-row"><span>{{ t.confidence }} <span class="info" :title="t.confidenceHelp" :aria-label="t.confidenceHelp">ⓘ</span></span><strong>{{ formatRate(analysis.trend.slope_ols_lo) }} – {{ formatRate(analysis.trend.slope_ols_hi) }}</strong></div>
             <div class="test-grid">
-              <div :title="t.m1"><span>{{ t.ols }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_ols) }}</strong></div>
-              <div :title="t.m2"><span>{{ t.mk }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_mk) }}</strong></div>
-              <div :title="t.m3"><span>{{ t.hr }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_value) }}</strong></div>
+              <div :title="`${t.pValueHelp} ${t.m1}`"><span>{{ t.ols }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_ols) }}</strong></div>
+              <div :title="`${t.pValueHelp} ${t.m2}`"><span>{{ t.mk }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_mk) }}</strong></div>
             </div>
             <p v-if="testConflict" class="period-note conflict-note">{{ t.testConflict }}</p>
             <p class="plain-summary">{{ analysis.summary[locale] }}</p>
-            <p v-if="!analysis.significant" class="period-note">A longer time period may change the significance result.</p>
-          </section>
-          <section v-if="comparison" class="result-card compare-card">
-            <div class="result-heading"><span class="step-label">{{ t.contrast }}</span><button class="text-button" @click="comparison = null">×</button></div>
-            <p class="compare-note">{{ t.opposite }}</p>
-            <div class="compare-item"><span>{{ comparison.a.label }}</span><strong>{{ formatRate(comparison.a.trend.slope_ols) }}</strong></div>
-            <div class="compare-item"><span>{{ comparison.b.label }}</span><strong>{{ formatRate(comparison.b.trend.slope_ols) }}</strong></div>
+            <p v-if="!analysis.significant" class="period-note">{{ t.longerPeriod }}</p>
           </section>
           <div v-if="error" class="error-message" role="alert">{{ error }} <button class="text-button" @click="error = ''">×</button></div>
         </div>
@@ -441,8 +431,7 @@ onMounted(async () => {
         <div class="dialog-top"><div><span class="eyebrow">{{ t.guided }}</span><h2 id="demos-title">{{ t.demoTitle }}</h2></div><button class="icon-button" :aria-label="t.close" @click="showDemos = false">×</button></div>
         <button class="demo-option" @click="startDemo('arctic')"><span class="demo-number">01</span><span><strong>{{ locale === 'en' ? 'Arctic amplification' : 'Amplification arctique' }}</strong><small>70–90°N · GISTEMP v4 · full record</small></span><span>→</span></button>
         <button class="demo-option" @click="startDemo('amazon')"><span class="demo-number">02</span><span><strong>{{ locale === 'en' ? 'Tropical forest region' : 'Forêt tropicale' }}</strong><small>Amazon example area · GISTEMP v4</small></span><span>→</span></button>
-        <button class="demo-option" @click="startDemo('sahara')"><span class="demo-number">03</span><span><strong>{{ locale === 'en' ? 'Desert region' : 'Région désertique' }}</strong><small>Sahara example area · GISTEMP v4</small></span><span>→</span></button>
-        <p class="dialog-note">{{ t.disclaimer }}</p>
+        <p class="dialog-note">{{ locale === 'en' ? 'All example series use the NASA GISTEMP v4 record:' : 'Toutes les séries d’exemple utilisent les données NASA GISTEMP v4 :' }} <a href="https://data.giss.nasa.gov/gistemp/" target="_blank" rel="noreferrer">NASA GISS</a>. {{ locale === 'en' ? 'Arctic context:' : 'Contexte arctique :' }} <a href="https://doi.org/10.1029/2021GL094086" target="_blank" rel="noreferrer">England et al. (2021)</a>.</p>
       </section>
     </div>
 

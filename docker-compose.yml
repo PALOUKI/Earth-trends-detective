@@ -35,6 +35,7 @@ services:
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - web_static:/srv:ro
+      - ./data/tiles:/tiles:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:

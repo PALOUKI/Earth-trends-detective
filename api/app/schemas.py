@@ -13,6 +13,18 @@ class RegionRequest(BaseModel):
     label: str = "Selected region"
 
 
+class VariableInfo(BaseModel):
+    id: str
+    name: str
+    name_fr: str
+    unit: str
+    definition: str
+    definition_fr: str
+    period: str
+    limitations: str
+    windows: list[str]
+
+
 class Suggestion(BaseModel):
     variable: str
     name: str
@@ -29,3 +41,60 @@ class RegionDefinition(BaseModel):
     description: str
     description_fr: str
     geometry_type: Literal["illustrative_rectangle"] = "illustrative_rectangle"
+
+
+class TrendStatistics(BaseModel):
+    n_valid: int
+    slope_ols: float | None
+    slope_ols_lo: float | None
+    slope_ols_hi: float | None
+    p_ols: float | None
+    slope: float | None
+    slope_lo: float | None
+    slope_hi: float | None
+    p_mk: float | None
+    p_value: float | None
+
+
+class SummaryText(BaseModel):
+    en: str
+    fr: str
+
+
+class AnalysisResponse(BaseModel):
+    variable: str
+    label: str
+    source: str
+    unit: str
+    bounds: dict[str, float] | None = None
+    location: dict[str, float] | None = None
+    period: dict[str, str]
+    time: list[str]
+    value: list[float | None]
+    seasonal: list[float | None]
+    anomaly: list[float | None]
+    trend: TrendStatistics
+    significant: bool
+    summary: SummaryText
+    caveats: list[str]
+
+
+class ComparisonResponse(BaseModel):
+    a: AnalysisResponse
+    b: AnalysisResponse
+
+
+class TrendMapResponse(BaseModel):
+    bounds: list[tuple[float, float]]
+    slope_unit: str
+    scale_min: float
+    scale_max: float
+    scale_percentile: float
+    minzoom: int
+    maxzoom: int
+    tile_size: int
+    tile_scheme: str
+    palette: dict[str, str]
+    layers: dict[str, str]
+    interpretation: str
+    urls: dict[str, str] | None = None

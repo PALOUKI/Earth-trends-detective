@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fittedLine, formatPValue, formatRate } from './trendUtils'
+import { fittedLine, formatPValue, formatRate, normalizeLongitude } from './trendUtils'
 
 describe('trend display helpers', () => {
   it('formats K/year slopes as signed K/decade rates', () => {
@@ -18,5 +18,11 @@ describe('trend display helpers', () => {
     const line = fittedLine([0, 1 / 12, null, 3 / 12], 1)
     expect(line[2]).toBeCloseTo(2 / 12)
     expect(line[0]).toBeCloseTo(0)
+  })
+
+  it('normalizes wrapped map longitudes into the API coordinate range', () => {
+    expect(normalizeLongitude(256)).toBe(-104)
+    expect(normalizeLongitude(180)).toBe(-180)
+    expect(normalizeLongitude(-181)).toBe(179)
   })
 })

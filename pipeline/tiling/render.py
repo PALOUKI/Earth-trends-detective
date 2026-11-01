@@ -1,18 +1,25 @@
-"""Render 2° global slope and nonsignificance stipple overlays."""
+"""Generate transparent XYZ trend and nonsignificance tiles with rio-tiler."""
 
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
 
 import numpy as np
 import xarray as xr
+from rasterio.enums import ColorInterp
+from rasterio.io import MemoryFile
+from rasterio.transform import from_bounds
+from rio_tiler.errors import TileOutsideBounds
+from rio_tiler.io import Reader
 
 from pipeline.tiling.png import encode_rgba_png
 
 NEGATIVE = (33, 102, 172)
 NEUTRAL = (247, 247, 247)
 POSITIVE = (178, 24, 43)
+WORLD_BOUNDS = (-180.0, -90.0, 180.0, 90.0)
 
 
 def _diverging_color(value: float, limit: float) -> tuple[int, int, int, int]:
@@ -26,17 +33,96 @@ def _diverging_color(value: float, limit: float) -> tuple[int, int, int, int]:
     return (*rgb, 255)
 
 
+def _write_xyz_tiles(
+    rgba: np.ndarray,
+    output_dir: Path,
+    *,
+    max_zoom: int,
+) -> None:
+    """Reproject a georeferenced RGBA array into 256px Web Mercator XYZ PNGs."""
+    height, width, _ = rgba.shape
+    profile = {
+        "driver": "GTiff",
+        "height": height,
+        "width": width,
+        "count": 4,
+        "dtype": "uint8",
+        "crs": "EPSG:4326",
+        "transform": from_bounds(*WORLD_BOUNDS, width, height),
+        "photometric": "RGB",
+        "compress": "deflate",
+    }
+    with MemoryFile() as memory_file:
+        with memory_file.open(**profile) as source:
+            source.write(np.moveaxis(rgba, -1, 0))
+            source.colorinterp = (
+                ColorInterp.red,
+                ColorInterp.green,
+                ColorInterp.blue,
+                ColorInterp.alpha,
+            )
+        with memory_file.open() as source:
+            with Reader(None, dataset=source) as reader:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        message="Adjusting dataset latitudes to avoid re-projection overflow",
+                        category=UserWarning,
+                    )
+                    for zoom in range(max_zoom + 1):
+                        side = 1 << zoom
+                        for x in range(side):
+                            for y in range(side):
+                                try:
+                                    tile = reader.tile(
+                                        x,
+                                        y,
+                                        zoom,
+                                        tilesize=256,
+                                        resampling_method="nearest",
+                                    )
+                                except TileOutsideBounds:
+                                    continue
+                                destination = output_dir / str(zoom) / str(x) / f"{y}.png"
+                                destination.parent.mkdir(parents=True, exist_ok=True)
+                                destination.write_bytes(
+                                    tile.render(img_format="PNG", add_mask=False)
+                                )
+
+
+def _slope_rgba(slope: np.ndarray, limit: float) -> np.ndarray:
+    """Apply a symmetric blue-neutral-red palette and transparent missing cells."""
+    image = np.zeros((*slope.shape, 4), dtype=np.uint8)
+    for row, col in np.argwhere(np.isfinite(slope)):
+        image[row, col] = _diverging_color(float(slope[row, col]), limit)
+    return image
+
+
+def _stipple_rgba(slope: np.ndarray, significant: np.ndarray) -> np.ndarray:
+    """Place one small black stipple at each valid cell that fails map FDR."""
+    height, width = slope.shape
+    image = np.zeros((height * 2, width * 2, 4), dtype=np.uint8)
+    valid_nonsignificant = np.isfinite(slope) & ~significant
+    for row, col in np.argwhere(valid_nonsignificant):
+        image[row * 2 + 1, col * 2 + 1] = (20, 20, 20, 210)
+    return image
+
+
 def render_trend_map(
     trends_path: Path,
     output_dir: Path,
     scale_percentile: float = 98,
+    max_zoom: int = 5,
 ) -> dict[str, object]:
-    """Write transparent PNG layers and palette metadata for MapLibre ImageSource."""
-    with xr.open_zarr(trends_path) as ds:
-        slope = np.asarray(ds.slope.transpose("lat", "lon").values, dtype=float)[::-1]
+    """Write slope and nonsignificance XYZ tiles for zooms zero through five."""
+    if not 0 <= max_zoom <= 5:
+        raise ValueError("The MVP tile zoom range must be between 0 and 5")
+    with xr.open_zarr(trends_path) as dataset:
+        slope = np.asarray(dataset.slope.transpose("lat", "lon").values, dtype=float)[::-1]
         significant = np.asarray(
-            ds.significant_fdr.transpose("lat", "lon").values, dtype=bool
+            dataset.significant_fdr.transpose("lat", "lon").values, dtype=bool
         )[::-1]
+
     finite = np.abs(slope[np.isfinite(slope)])
     if finite.size == 0:
         raise ValueError("Trend grid has no finite slope values")
@@ -44,26 +130,21 @@ def render_trend_map(
     if limit == 0:
         limit = 1e-12
 
-    height, width = slope.shape
-    rgba = bytearray(width * height * 4)
-    stipple = bytearray(width * 2 * height * 2 * 4)
-    for row in range(height):
-        for col in range(width):
-            value = slope[row, col]
-            if np.isfinite(value):
-                offset = (row * width + col) * 4
-                rgba[offset : offset + 4] = bytes(_diverging_color(float(value), limit))
-            if np.isfinite(value) and not significant[row, col]:
-                # One dark point per 2x2 output block makes the non-significance
-                # stipple visible when the 2° image is enlarged by the map.
-                dot_row, dot_col = row * 2, col * 2
-                offset = (dot_row * width * 2 + dot_col) * 4
-                stipple[offset : offset + 4] = bytes((20, 20, 20, 190))
-
     output_dir.mkdir(parents=True, exist_ok=True)
-    (output_dir / "slope.png").write_bytes(encode_rgba_png(rgba, width, height))
+    slope_image = _slope_rgba(slope, limit)
+    stipple_image = _stipple_rgba(slope, significant)
+    _write_xyz_tiles(slope_image, output_dir / "slope", max_zoom=max_zoom)
+    _write_xyz_tiles(
+        stipple_image,
+        output_dir / "nonsignificant",
+        max_zoom=max_zoom,
+    )
+    height, width = slope.shape
+    (output_dir / "slope.png").write_bytes(
+        encode_rgba_png(slope_image.tobytes(), width, height)
+    )
     (output_dir / "nonsignificant.png").write_bytes(
-        encode_rgba_png(stipple, width * 2, height * 2)
+        encode_rgba_png(stipple_image.tobytes(), width * 2, height * 2)
     )
     metadata: dict[str, object] = {
         "bounds": [[-180, 90], [180, 90], [180, -90], [-180, -90]],
@@ -71,12 +152,19 @@ def render_trend_map(
         "scale_min": -limit,
         "scale_max": limit,
         "scale_percentile": scale_percentile,
+        "minzoom": 0,
+        "maxzoom": max_zoom,
+        "tile_size": 256,
+        "tile_scheme": "XYZ / WebMercatorQuad",
         "palette": {
             "negative": "#2166ac",
             "zero": "#f7f7f7",
             "positive": "#b2182b",
         },
-        "layers": {"slope": "slope.png", "nonsignificant": "nonsignificant.png"},
+        "layers": {
+            "slope": "slope/{z}/{x}/{y}.png",
+            "nonsignificant": "nonsignificant/{z}/{x}/{y}.png",
+        },
         "interpretation": (
             "Transparent pixels indicate missing values; black stipple dots mark cells "
             "not significant after Benjamini-Hochberg FDR."

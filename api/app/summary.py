@@ -10,7 +10,6 @@ def make_summary(
     hi: float | None,
     p_ols: float | None,
     p_mk: float | None,
-    p_hamed_rao: float | None,
     unit: str = "K/year",
 ) -> dict[str, str]:
     if slope is None or lo is None or hi is None:
@@ -43,13 +42,11 @@ def make_summary(
         return f"{value:.3f}"
 
     tests_en = (
-        f"Test p-values: OLS t={p_text(p_ols)}, Mann-Kendall={p_text(p_mk)}, "
-        f"Hamed-Rao={p_text(p_hamed_rao)}. "
+        f"Test p-values: OLS t={p_text(p_ols)}, Mann-Kendall={p_text(p_mk)}. "
         "No spatial FDR correction applies to one selected region."
     )
     tests_fr = (
-        f"Valeurs p : test t MCO={p_text(p_ols)}, Mann-Kendall={p_text(p_mk)}, "
-        f"Hamed-Rao={p_text(p_hamed_rao)}. "
+        f"Valeurs p : test t MCO={p_text(p_ols)}, Mann-Kendall={p_text(p_mk)}. "
         "La correction FDR spatiale ne s’applique pas à une seule région."
     )
     return {

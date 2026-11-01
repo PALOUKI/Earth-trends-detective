@@ -50,10 +50,11 @@ export interface Analysis {
 }
 
 export interface MapLayer {
-  bounds: [[number, number], [number, number], [number, number], [number, number]]
   slope_unit: string
   scale_min: number
   scale_max: number
+  minzoom: number
+  maxzoom: number
   palette: { negative: string; zero: string; positive: string }
   urls: { slope: string; nonsignificant: string }
 }
@@ -81,8 +82,6 @@ export const api = {
   point: (lat: number, lon: number, start?: string, end?: string) =>
     getJson<Analysis>(`/api/point?variable=gistemp_tas_anom&lat=${lat}&lon=${lon}${start ? `&start=${start}` : ''}${end ? `&end=${end}` : ''}`),
   map: (window: string) => getJson<MapLayer>(`/api/trend/gistemp_tas_anom?window=${window}`),
-  compare: (a: string, b: string) =>
-    getJson<{ a: Analysis; b: Analysis }>(`/api/compare?variable=gistemp_tas_anom&a=${a}&b=${b}`),
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {

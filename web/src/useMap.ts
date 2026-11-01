@@ -1,6 +1,7 @@
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue'
 import maplibregl, { type Map as MapLibreMap, type MapMouseEvent } from 'maplibre-gl'
 import type { MapLayer } from './api'
+import { normalizeLongitude } from './trendUtils'
 
 const blankStyle = {
   version: 8 as const,
@@ -30,10 +31,26 @@ export function useMap(
   let dragStart: [number, number] | null = null
   let ignoreNextClick = false
 
-  const transparentImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/2ioAAAAASUVORK5CYII='
-  const worldCoordinates: [[number, number], [number, number], [number, number], [number, number]] = [
-    [-180, 90], [180, 90], [180, -90], [-180, -90],
-  ]
+  function applyTrendLayers(instance: MapLibreMap, layer: MapLayer) {
+    const addOrUpdateRaster = (id: string, url: string, opacity: number) => {
+      const existing = instance.getSource(id) as maplibregl.RasterTileSource | undefined
+      if (existing) {
+        existing.setTiles([url])
+        return
+      }
+      instance.addSource(id, {
+        type: 'raster',
+        tiles: [url],
+        tileSize: 256,
+        minzoom: layer.minzoom,
+        maxzoom: layer.maxzoom,
+        bounds: [-180, -85.051129, 180, 85.051129],
+      })
+      instance.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': opacity } })
+    }
+    addOrUpdateRaster('slope-overlay', layer.urls.slope, 0.72)
+    addOrUpdateRaster('significance-overlay', layer.urls.nonsignificant, 0.8)
+  }
 
   function drawBounds(mapInstance: MapLibreMap, start: [number, number], end: [number, number]) {
     const west = Math.min(start[0], end[0])
@@ -77,22 +94,11 @@ export function useMap(
       zoom: 1.35,
       minZoom: 0.75,
       maxZoom: 7,
+      renderWorldCopies: false,
     })
     instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
     instance.on('load', () => {
-      const coordinates = selectedLayer.value?.bounds ?? worldCoordinates
-      instance.addSource('slope-overlay', {
-        type: 'image',
-        url: selectedLayer.value?.urls.slope ?? transparentImage,
-        coordinates,
-      })
-      instance.addLayer({ id: 'slope-overlay', type: 'raster', source: 'slope-overlay', paint: { 'raster-opacity': 0.72 } })
-      instance.addSource('significance-overlay', {
-        type: 'image',
-        url: selectedLayer.value?.urls.nonsignificant ?? transparentImage,
-        coordinates,
-      })
-      instance.addLayer({ id: 'significance-overlay', type: 'raster', source: 'significance-overlay', paint: { 'raster-opacity': 0.8 } })
+      if (selectedLayer.value) applyTrendLayers(instance, selectedLayer.value)
     })
     instance.on('click', (event: MapMouseEvent) => {
       if (ignoreNextClick) {
@@ -100,7 +106,7 @@ export function useMap(
         return
       }
       if (drawing.value) return
-      onPoint(event.lngLat.lat, event.lngLat.lng)
+      onPoint(event.lngLat.lat, normalizeLongitude(event.lngLat.lng))
     })
     instance.on('mousedown', (event) => {
       if (!drawing.value) return
@@ -130,14 +136,8 @@ export function useMap(
   watch(selectedLayer, (layer) => {
     const instance = map.value
     if (!instance || !layer) return
-    const update = () => {
-      const slope = instance.getSource('slope-overlay') as maplibregl.ImageSource | undefined
-      const significance = instance.getSource('significance-overlay') as maplibregl.ImageSource | undefined
-      slope?.updateImage({ url: layer.urls.slope, coordinates: layer.bounds })
-      significance?.updateImage({ url: layer.urls.nonsignificant, coordinates: layer.bounds })
-    }
-    if (instance.isStyleLoaded()) update()
-    else instance.once('load', update)
+    if (instance.isStyleLoaded()) applyTrendLayers(instance, layer)
+    else instance.once('load', () => applyTrendLayers(instance, layer))
   }, { immediate: true })
 
   onBeforeUnmount(() => map.value?.remove())

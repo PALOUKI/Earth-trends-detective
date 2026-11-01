@@ -9,6 +9,10 @@ export function formatPValue(value: number | null | undefined): string {
   return value < 0.001 ? '< 0.001' : value.toFixed(3)
 }
 
+export function normalizeLongitude(longitude: number): number {
+  return ((longitude + 180) % 360 + 360) % 360 - 180
+}
+
 export function fittedLine(values: Array<number | null>, slopePerYear: number | null) {
   if (slopePerYear === null || !Number.isFinite(slopePerYear)) return values.map(() => null)
   const valid = values.flatMap((value, index) =>

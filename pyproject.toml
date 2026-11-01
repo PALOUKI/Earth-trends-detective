@@ -18,6 +18,7 @@ dependencies = [
   "h5netcdf==1.6.1",
   "earthaccess==0.14.0",
   "pymannkendall==1.4.3",
+  "rio-tiler==9.4.9",
   "statsmodels==0.14.4",
   "python-dotenv==1.1.0",
 ]

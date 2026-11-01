@@ -51,7 +51,7 @@ export function useMap(
       })
       instance.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': opacity } })
     }
-    addOrUpdateRaster('slope-overlay', layer.urls.slope, 0.55)
+    addOrUpdateRaster('slope-overlay', layer.urls.slope, 0.38)
     addOrUpdateRaster('significance-overlay', layer.urls.nonsignificant, 0.82)
   }
 

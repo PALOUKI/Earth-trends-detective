@@ -70,7 +70,7 @@ Updated: 2026-11-01
 - [x] Reviewed the supplied Stitch design system and explorer, wizard, and demo screens. Applied the NASA-blue palette, Inter typography, 8px spacing rhythm, analytical side panel, map workspace, and three-step investigation wizard.
 - [x] Implemented Vue 3 + Vite + TypeScript UI with MapLibre, ECharts, English default/French switch, region controls, rectangle drawing, period presets, point clicks, bilingual summaries, methods, and two GISTEMP guided examples as required for M6.
 - [x] Replaced the dated MODIS true-color base image with GIBS `BlueMarble_NextGeneration`, verified in the live WMTS capabilities and by a real HTTP 200 tile request; GIBS remains geographic background imagery only.
-- [x] Trend slope tiles are bilinearly resampled for display only; missing slope cells remain transparent and nonsignificance stipple marks retain nearest-neighbor rendering. Statistical source values are unchanged.
+- [x] Trend tiles preserve the native GISTEMP grid with nearest-neighbor display resampling, reduced overlay opacity, and transparent missing cells; stipple marks remain crisp. These are display choices only; statistical source values are unchanged.
 - [x] Removed the M7 comparison control from the frontend before deployment; the comparison API route remains because section 12 lists it as an M5 endpoint.
 - [x] Added plain-language p-value, confidence-interval, and significance explanations in English and French.
 - [x] Added English/French explanation for a non-significant result; demo dialog cites NASA GISTEMP and the verified Arctic-amplification paper.

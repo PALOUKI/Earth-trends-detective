@@ -42,8 +42,8 @@ def _write_xyz_tiles(
 ) -> None:
     """Reproject an RGBA array into Web Mercator XYZ PNGs.
 
-    Bilinear resampling is suitable for the continuous slope color layer. Categorical
-    stipple marks use nearest-neighbor so the individual marks remain crisp.
+    Nearest-neighbor keeps the native 2-degree grid visible and avoids spreading
+    positive slope colors into a blurred wash. Transparent missing cells stay masked.
     """
     height, width, _ = rgba.shape
     profile = {
@@ -142,7 +142,7 @@ def render_trend_map(
         slope_image,
         output_dir / "slope",
         max_zoom=max_zoom,
-        resampling_method="bilinear",
+        resampling_method="nearest",
     )
     _write_xyz_tiles(
         stipple_image,

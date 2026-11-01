@@ -13,3 +13,11 @@
 - **Processing:** Converted source time coordinates to month starts; normalized longitude to [-180, 180]; retained native 2° grid; masked cells below 70% valid months or 120 valid months; wrote chunked Zarr v2. Values are already monthly anomalies and were not deseasonalized a second time.
 - **CMR short name:** None used. A live authenticated `earthaccess` CMR search for `GISTEMP` returned zero records; this data source is obtained from the NASA GISS public download page.
 - **Limitations:** This is a blended land-surface air and sea-surface temperature analysis, not absolute temperature. Coverage varies in space and time; the current endpoint can update historical values.
+
+### NASA GISTEMP published global monthly series (validation reference)
+
+- **Product:** Land-Ocean Temperature Index global monthly mean anomalies.
+- **Publisher:** NASA Goddard Institute for Space Studies.
+- **URL:** [Global monthly CSV](https://data.giss.nasa.gov/gistemp/tabledata_v4/GLB.Ts%2BdSST.csv), linked from the [official downloads page](https://data.giss.nasa.gov/gistemp/data_v4.html).
+- **Accessed:** 2026-11-01.
+- **Use:** Independent published aggregate for validating the processed gridded product; not used as an application input.

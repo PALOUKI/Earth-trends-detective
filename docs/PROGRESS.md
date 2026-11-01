@@ -2,7 +2,7 @@
 
 Updated: 2026-11-01
 
-## Current milestone: M2 — regional analysis and trend statistics
+## Current milestone: M4 — map products and visual encoding
 
 - [x] Read the full `AGENT_BRIEF.md`; section 1 bis governs scope and sequencing.
 - [x] Confirmed the GISTEMP v4 download page and selected gridded NetCDF product are published by NASA GISS. The official compressed file URL is `https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz`.
@@ -24,7 +24,23 @@ Updated: 2026-11-01
 - [x] Inspected source metadata: `tempanomaly`, units K, `time=1761` (1880-01 to 2026-09), native dimensions `lat=90`, `lon=180`, coordinates centered on 2° cells.
 - [x] Implemented `make ingest` / `make preprocess`: converts time to month starts, normalizes longitude to [-180, 180], masks cells with <70% valid months or <120 months, saves `n_valid`, and writes chunked Zarr v2 with source/version/DOI/CRS attributes.
 - [x] Opened the generated Zarr with xarray in the schema test; all tests pass.
-- [ ] M1 acceptance check for independently reproduced global weighted GISTEMP curve and trend remains for M3 scientific validation.
+- [x] M1 curve/trend acceptance checked during M3 against NASA's published global monthly mean; numerical differences are documented below.
+
+## Completed: M2 — regional analysis and trend statistics
+
+- [x] Added cosine-latitude weighted regional mean extraction with explicit missing-cell handling and month-start period slicing.
+- [x] Implemented monthly deseasonalization for display, OLS slope/95% CI/t test, Sen slope/95% CI, classic Mann-Kendall, and Hamed-Rao adjusted Mann-Kendall.
+- [x] Added grid analysis using `xarray.apply_ufunc` with `dask='parallelized'`, Benjamini-Hochberg FDR (`alpha=0.10`), and {-1,0,1} sign classes.
+- [x] Tests cover known AR(1) trend recovery, 1,000 reference comparisons against SciPy and pyMannKendall, missing/constant series, false-positive rate, FDR, seasonal removal, and area weighting.
+- [ ] The required benchmark for a full 2° grid (about 16,000 pixels × 1,700 months) has not been run; per-pixel computation uses SciPy/pyMannKendall through the Dask gufunc and may exceed the 2-minute target.
+
+## Completed: M3 — scientific validation (GISTEMP scope)
+
+- [x] Compared 561 monthly global series (1980-01–2026-09) to the NASA GISS published global CSV: bias 0.00267 K, RMSE 0.05006 K, maximum absolute difference 0.18366 K.
+- [x] Grid weighted and published global linear slopes agree to 0.0000008 K/year (0.0210564 vs 0.0210556 K/year).
+- [x] Regional grid results show 0.06926 K/year for 70–90°N and 0.03408 K/year for 30–60°N, matching the published qualitative Arctic amplification pattern (England et al., 2021; DOI 10.1029/2021GL094086).
+- [x] Reproducible code and the expected/obtained summary are in `notebooks/01_validation_gistemp.ipynb`; NASA source and access date are in `docs/DATA_SOURCES.md`.
+- [ ] Giovanni cross-check was not completed: an interactive regional export for this GISTEMP product was not accessible in the run. No Giovanni values are claimed.
 
 ## M0 acceptance summary
 

@@ -10,15 +10,15 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from dotenv import load_dotenv
-from pyhdf.SD import SD, SDC
 from pyhdf.error import HDF4Error
+from pyhdf.SD import SD, SDC
 
 SHORT_NAME = "AIRS3STM"
 VERSION = "7.0"
 FIELD = "SurfAirTemp_A"
 RAW_DIR = Path("data/raw/airs3stm")
 OUTPUT = Path("data/processed/airs_surface_air_temp.zarr")
-FILENAME = re.compile(r"AIRS\.(\d{4})\.(\d{2})\.\d{2}\.L3\.RetStd_IR031\.v7\.0\..*\.hdf$")
+FILENAME = re.compile(r"AIRS\.(\d{4})\.(\d{2})\.\d{2}\.L3\.RetStd_IR0\d{2}\.v7\.0\..*\.hdf$")
 FILL = -9999.0
 TARGET_LAT = np.arange(-89.0, 90.0, 2.0)
 TARGET_LON = np.arange(-179.0, 180.0, 2.0)

@@ -10,7 +10,6 @@ Updated: 2026-11-01
 - [x] `uv sync --all-groups` succeeds with Python 3.11; pytest and Ruff pass locally.
 - [x] Earthdata environment login succeeded and a live CMR search request completed; CMR returned zero GISTEMP records, consistent with GISTEMP being served directly by NASA GISS and not cataloged here as a CMR granule product.
 - [ ] Deployment server/domain credentials are not available; M8 deployment cannot be completed until an endpoint and deployment access are available.
-- [ ] npm could not resolve `registry.npmjs.org` (`EAI_AGAIN`), including an escalated retry. The Vue app source and direct dependency pins are in place, but npm could not generate `package-lock.json`, install dependencies, or verify a build. npm registry/DNS access or a prepared npm cache/lockfile is needed.
 
 ## Decisions and blockers
 
@@ -66,8 +65,10 @@ Updated: 2026-11-01
 - [x] Reviewed the Stitch design system and explorer, wizard, and demo screens. Applied the NASA-blue palette, Inter typography, 8px spacing rhythm, analytical side panel, map workspace, and three-step investigation wizard.
 - [x] Implemented Vue 3 + Vite + TypeScript UI with MapLibre, ECharts, English default/French switch, region controls, rectangle drawing, period presets, point clicks, Base and Rigorous statistics, bilingual summaries, methods, regional comparison, and three GISTEMP guided examples.
 - [x] Added frontend utility tests for rate/p-value formatting and fitted-line display. Direct npm dependencies are pinned; Node/npm versions are specified in `.nvmrc` and `package.json`.
-- [ ] Frontend build and Vitest remain unverified because dependencies could not be installed; `package-lock.json` is missing. Docker web build awaits restored npm registry access.
-- [ ] Mobile/browser review and full user-journey acceptance await a successful build.
+- [x] `npm install` succeeded; direct dependencies are pinned and `web/package-lock.json` is available for reproducible installs.
+- [x] `npm test` passes (3 frontend utility tests); `npm run build` passes type-checking and production bundling.
+- [x] Local Vite and API are running. `GET /` and proxied `GET /api/variables` both returned HTTP 200.
+- [ ] Manual mobile/browser review remains outstanding. Build reports a large JavaScript bundle (1.50 MB minified, 452 KB gzip); code splitting would improve first load.
 
 ## M8 preparation and required access
 
@@ -82,4 +83,4 @@ Updated: 2026-11-01
 
 ## Upcoming milestones
 
-Next: complete and verify M6 after npm access returns; then build and deploy M8 once server/domain access is supplied. M7 remains deferred until after M8.
+Next: complete manual M6 browser review; then deploy M8 once server/domain access is supplied. M7 remains deferred until after M8.

@@ -73,7 +73,6 @@ export function useMap(
       zoom: 1.35,
       minZoom: 0.75,
       maxZoom: 7,
-      attributionControl: true,
     })
     instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
     instance.on('load', () => {

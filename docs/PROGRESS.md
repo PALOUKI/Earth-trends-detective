@@ -22,9 +22,10 @@ Updated: 2026-11-01
 - [x] Téléchargé et contrôlé le jeu GPM complet retourné par CMR : 309 granules mensuels (2000-01–2025-09), dont 121 récupérés après reprise ; 309 fichiers HDF5 validés, série sur grille 2° produite, tendances et cartes XYZ `full`, `2010-fin`, `2015-fin` générées. L'API signale GPM `analysis_ready`.
 - [x] Adaptateurs GPM mensuel et OMI quotidien-vers-mensuel ajoutés avec tests de grille, Fill, unités et dates ; l'agrégation OMI est préparée pour une série 2005–2014. Les téléchargements historiques et produits d'analyse OMI restent à exécuter.
 - [x] Approbation Earthdata vérifiée par téléchargement : le champ MERRA-2 `EVAP` (kg m-2 s-1) et le champ GLDAS `SoilMoi0_10cm_inst` (kg m-2) ont été lus dans de vrais fichiers NASA. Les téléchargements de 120 mois 2000–2009 sont en cours avec contrôle de chaque NetCDF avant inclusion.
-- [ ] OMI 2005–2014 : le téléchargement quotidien de 3 646 granules a atteint environ 22 % (811/3 646 au dernier contrôle) ; série mensuelle, tendances et tuiles à générer après réception complète.
+- [ ] OMI 2005–2014 : le téléchargement quotidien de 3 646 granules a atteint environ 22 % (819/3 646 au dernier contrôle) ; série mensuelle, tendances et tuiles à générer après réception complète.
 - [x] Tests d'adaptateurs MERRA-2/GLDAS : lecture de vrais noms de champs configurés, unité, masquage des Fill, grille cible et conservation des mois manquants couverts par tests synthétiques.
-- [x] Adaptateur AIRS3STM v7 écrit : champ vérifié `SurfAirTemp_A`, grille source 1° contrôlée et conversion sur la grille d'analyse 2°. Le guide NASA confirme l'unité K ; téléchargement mensuel 2002-09–2012-08 en cours.
+- [x] Adaptateur AIRS3STM v7 écrit : champ vérifié `SurfAirTemp_A`, grille source 1° contrôlée et conversion sur la grille d'analyse 2°. Le guide NASA confirme l'unité K ; téléchargement mensuel 2002-09–2012-08 en cours (66/120 fichiers validés au dernier contrôle).
+- [ ] Les téléchargements MERRA-2 et GLDAS restent actifs mais lents : 23/120 et 15/120 fichiers mensuels validés au dernier contrôle ; générer Zarr, tendances et tuiles après réception.
 - [x] `make test` ne peut pas démarrer dans ce bac à sable car uv écrit dans un cache utilisateur en lecture seule ; `.venv/bin/pytest -q` passe (43 tests), Ruff et `git diff --check` passent.
 - [x] `make test` passe avec les nouveaux tests GPM/OMI (39 tests au total) ; Ruff passe sur les modules d'ingestion et les fichiers API/pipeline modifiés.
 

@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
+from dotenv import load_dotenv
 from pyhdf.error import HDF4Error
 from pyhdf.SD import SD, SDC
 
@@ -265,6 +266,7 @@ def download_modis(
     raw_dir: Path = RAW_DIR,
 ) -> list[Path]:
     """Download actual LP DAAC monthly global granules for the requested period."""
+    load_dotenv()
     auth = earthaccess.login(strategy="environment", persist=False)
     if not auth:
         raise RuntimeError(

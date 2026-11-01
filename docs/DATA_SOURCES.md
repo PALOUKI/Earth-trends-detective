@@ -24,19 +24,23 @@
 - **Actual granule inspected:** `MOD13C2.A2024001.061.2024038052740.hdf`, January 2024; downloaded from a real CMR granule link and decoded with HDF4. CMR returned 319 monthly granules for 2000-02 through 2026-08 in the live range query. The local ingest currently has a contiguous partial record; see `docs/PROGRESS.md` before treating its trend products as complete.
 - **Variables:** `CMG 0.05 Deg Monthly NDVI` and `CMG 0.05 Deg Monthly EVI`, unitless indices. Each is a proxy affected by retrieval quality, clouds, snow/ice, atmosphere, view geometry, and land cover; neither is a direct measure of biomass.
 
-## Other CMR-verified NASA products awaiting GES DISC authorization
+## Other CMR-verified NASA products after GES DISC authorization
 
-`earthaccess.search_datasets` and actual granule searches confirmed the following short names, versions, DOI/collection metadata, and example granules. Real GET data requests returned HTTP 403 `EULA Acceptance Failure`; no downloaded values are used in the app yet.
+Live authenticated CMR searches confirmed the short names, versions, and granules for all five products. Following Earthdata application authorization, each HTTPS link returned HTTP 206 for a real 4 KiB byte-range read from an actual data file. GPM, OMI, and AIRS sample granules were downloaded; MERRA-2 and GLDAS still need a full sample download and field-level inspection.
 
-| Product | CMR short name | Version | DOI | Status |
+| Product | CMR short name | Version | DOI | Verified state |
 | --- | --- | --- | --- | --- |
-| MERRA-2 monthly single-level flux diagnostics | `M2TMNXFLX` | 5.12.4 | [10.5067/0JRLVL8YV2Y4](https://doi.org/10.5067/0JRLVL8YV2Y4) | Awaiting GES DISC application EULA |
-| GLDAS Noah monthly 0.25° | `GLDAS_NOAH025_M` | 2.1 | [10.5067/SXAVCZFAQLNO](https://doi.org/10.5067/SXAVCZFAQLNO) | Awaiting GES DISC application EULA |
-| GPM IMERG Final monthly | `GPM_3IMERGM` | 07 | [10.5067/GPM/IMERG/3B-MONTH/07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07) | Awaiting GES DISC application EULA |
-| AIRS/Aqua monthly support product | `AIRS3STM` | 7.0 | [10.5067/UBENJB9D3T2H](https://doi.org/10.5067/UBENJB9D3T2H) | Awaiting GES DISC application EULA |
-| OMI daily tropospheric NO₂ | `OMNO2d` | 004 | [10.5067/AURA/OMI/DATA3407](https://doi.org/10.5067/AURA/OMI/DATA3407) | Awaiting GES DISC application EULA |
+| MERRA-2 monthly single-level flux diagnostics | `M2TMNXFLX` | 5.12.4 | [10.5067/0JRLVL8YV2Y4](https://doi.org/10.5067/0JRLVL8YV2Y4) | Authenticated file bytes verified; inspect sample fields next |
+| GLDAS Noah monthly 0.25° | `GLDAS_NOAH025_M` | 2.1 | [10.5067/SXAVCZFAQLNO](https://doi.org/10.5067/SXAVCZFAQLNO) | Authenticated file bytes verified; inspect sample fields next |
+| GPM IMERG Final monthly | `GPM_3IMERGM` | 07 | [10.5067/GPM/IMERG/3B-MONTH/07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07) | Sample decoded: `Grid/precipitation`, mm/hr; 309 CMR granules, Jan 2000–Sep 2025; download running |
+| AIRS/Aqua monthly standard product | `AIRS3STM` | 7.0 | [10.5067/UBENJB9D3T2H](https://doi.org/10.5067/UBENJB9D3T2H) | Sample downloaded; `SurfAirTemp_A` is surface atmospheric temperature, K, per NASA V7 L3 guide |
+| OMI daily tropospheric NO₂ | `OMNO2d` | 004 | [10.5067/AURA/OMI/DATA3407](https://doi.org/10.5067/AURA/OMI/DATA3407) | Sample decoded: `ColumnAmountNO2TropCloudScreened`, molec/cm²; daily-to-monthly aggregation pending |
 
-The app catalog presents these as unavailable until the access agreement is accepted, variables and units are confirmed from actual product files, and the complete analysis pipeline has been run.
+Access authorization is now in place. Products remain unavailable for analysis in the interface until their source variables, local time series, trend statistics, and maps are fully checked and generated.
+
+The AIRS entry is the standard monthly AIRS-only product. Its downloaded sample contains `SurfAirTemp_A` (ascending); the NASA V7 L3 User Guide identifies it as surface atmospheric temperature in kelvin and describes the 1° monthly grid. It is an atmosphere/climate variable, not an air-pollution measurement.
+
+OMI is the air-quality candidate. NASA describes `OMNO2d` as a daily 0.25° L3 global grid and its field documentation identifies `ColumnAmountNO2TropCloudScreened` in molecules/cm²; the product is cloud-screened, not a surface monitor. See the [NASA OMNO2d V004 dataset record](https://data.nasa.gov/dataset/omi-aura-no2-cloud-screened-total-and-tropospheric-column-l3-global-gridded-0-25-degree-x--7a338) and [OMI README](https://ozoneaq.gsfc.nasa.gov/content/public/OMI/READMEs/README.OMNO2.pdf). Monthly values in this project are to be computed from the valid daily grids.
 
 ## NASA GIBS Blue Marble basemap
 

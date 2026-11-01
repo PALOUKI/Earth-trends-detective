@@ -99,7 +99,7 @@ CATALOG = [
         "id": "merra2_flux",
         "name": "MERRA-2 monthly flux diagnostics",
         "name_fr": "Diagnostics mensuels de flux MERRA-2",
-        "unit": "Pending file-level metadata",
+        "unit": "Pending file-level verification",
         "definition": (
             "NASA MERRA-2 monthly surface-flux product; selected field and units "
             "await file inspection."
@@ -113,14 +113,17 @@ CATALOG = [
         "source": "NASA GMAO MERRA-2 v5.12.4",
         "doi": "10.5067/0JRLVL8YV2Y4",
         "short_name": "M2TMNXFLX",
-        "status": "blocked_eula",
-        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+        "status": "acquiring",
+        "status_detail": (
+            "Earthdata links return real file bytes; field metadata and analysis products "
+            "are pending."
+        ),
     },
     {
         "id": "gldas_noah_monthly",
         "name": "GLDAS Noah monthly land-surface fields",
         "name_fr": "Variables mensuelles de surface terrestre GLDAS Noah",
-        "unit": "Pending file-level metadata",
+        "unit": "Pending file-level verification",
         "definition": (
             "Monthly land-surface model output; selected field and units await file inspection."
         ),
@@ -133,54 +136,63 @@ CATALOG = [
         "source": "NASA GLDAS Noah v2.1",
         "doi": "10.5067/SXAVCZFAQLNO",
         "short_name": "GLDAS_NOAH025_M",
-        "status": "blocked_eula",
-        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+        "status": "acquiring",
+        "status_detail": (
+            "Earthdata links return real file bytes; field metadata and analysis products "
+            "are pending."
+        ),
     },
     {
         "id": "gpm_precipitation",
         "name": "GPM IMERG monthly precipitation",
         "name_fr": "Précipitations mensuelles GPM IMERG",
-        "unit": "mm/month",
-        "definition": "Monthly precipitation from the NASA GPM IMERG product.",
-        "definition_fr": "Précipitations mensuelles issues du produit NASA GPM IMERG.",
-        "period": "2000 onward",
+        "unit": "mm/hr",
+        "definition": "Monthly mean precipitation rate from the NASA GPM IMERG product.",
+        "definition_fr": "Taux mensuel moyen de précipitations du produit NASA GPM IMERG.",
+        "period": "2000-01 to 2025-09 in CMR; local processing pending",
         "limitations": (
             "Satellite precipitation estimates; uncertainty varies by surface and regime."
         ),
         "source": "NASA GPM IMERG v07",
         "doi": "10.5067/GPM/IMERG/3B-MONTH/07",
         "short_name": "GPM_3IMERGM",
-        "status": "blocked_eula",
-        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+        "status": "acquiring",
+        "status_detail": (
+            "Earthdata access is verified; source files and analysis products "
+            "are being prepared."
+        ),
     },
     {
-        "id": "airs_monthly_support",
-        "name": "AIRS monthly support product",
-        "name_fr": "Produit mensuel de support AIRS",
-        "unit": "Pending file-level metadata",
+        "id": "airs_surface_air_temp",
+        "name": "AIRS monthly surface air temperature",
+        "name_fr": "Température de l'air en surface mensuelle AIRS",
+        "unit": "K",
         "definition": (
-            "NASA AIRS/Aqua monthly support collection; selected field and units "
-            "await file inspection."
+            "NASA AIRS/Aqua monthly standard product field SurfAirTemp_A; unit and meaning "
+            "verified against the NASA V7 L3 guide."
         ),
         "definition_fr": (
-            "Collection mensuelle NASA AIRS/Aqua ; variable et unités à confirmer sur le fichier."
+            "Température atmosphérique en surface mensuelle AIRS, champ SurfAirTemp_A ; unité K."
         ),
         "period": "2002 onward",
         "limitations": "Satellite retrieval; cloud clearing, coverage, and retrieval quality vary.",
-        "source": "NASA AIRS/Aqua Support product v7.0",
+        "source": "NASA AIRS/Aqua L3 Standard Physical Retrieval (AIRS-only) v7.0",
         "doi": "10.5067/UBENJB9D3T2H",
         "short_name": "AIRS3STM",
-        "status": "blocked_eula",
-        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+        "status": "sample_downloaded",
+        "status_detail": (
+            "A real monthly sample is downloaded; SurfAirTemp_A and K are verified, but "
+            "a long time series and analysis products are not generated."
+        ),
     },
     {
         "id": "omi_no2",
         "name": "OMI tropospheric nitrogen dioxide",
         "name_fr": "Dioxyde d'azote troposphérique OMI",
-        "unit": "Pending file-level metadata",
-        "definition": "NASA OMI daily tropospheric NO₂ product; field units await file inspection.",
+        "unit": "molec/cm2",
+        "definition": "Cloud-screened tropospheric NO₂ column from NASA OMI daily Level-3 data.",
         "definition_fr": (
-            "Produit quotidien NASA OMI de NO₂ troposphérique ; unités à confirmer sur le fichier."
+            "Colonne troposphérique de NO₂ filtrée des nuages issue du produit quotidien NASA OMI."
         ),
         "period": "2004 onward",
         "limitations": (
@@ -189,8 +201,11 @@ CATALOG = [
         "source": "NASA Aura OMI Daily Level-3 v004",
         "doi": "10.5067/AURA/OMI/DATA3407",
         "short_name": "OMNO2d",
-        "status": "blocked_eula",
-        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+        "status": "acquiring",
+        "status_detail": (
+            "The measured field and units are verified from a real granule; daily-to-monthly "
+            "aggregation and trend products are pending."
+        ),
     },
 ]
 
@@ -400,7 +415,7 @@ async def suggest(theme: str = "climate", place: str = "") -> list[Suggestion]:
         "rainfall": "gpm_precipitation",
         "soil": "gldas_noah_monthly",
         "air": "omi_no2",
-        "atmosphere": "airs_monthly_support",
+        "atmosphere": "airs_surface_air_temp",
         "air quality": "omi_no2",
     }
     candidate_id = catalog_by_theme.get(theme.lower())

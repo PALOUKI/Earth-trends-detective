@@ -17,7 +17,11 @@ Updated: 2026-11-01
 - [x] CMR interrogé en direct : 319 granules mensuels de février 2000 à août 2026. Le téléchargeur reprend les transferts interrompus avec requêtes Range, vérifie la taille/HDF4 et ne promeut que les granules lisibles. 148 granules validés en local ; une fenêtre de 139 mois consécutifs (2000-02–2011-08) a été traitée.
 - [x] Pipeline tendances/tuiles, extraction régionale, sérialisation API et sélecteur d'interface généralisés aux identifiants de variables. NDVI et EVI sont maintenant des analyses prêtes avec leurs séries, statistiques de tendance, COG et cartes XYZ calculés.
 - [x] L'adaptateur exige au moins 120 mois consécutifs et l'analyse des indices MODIS enlève la climatologie mensuelle par cellule. Les tendances et cartes NDVI/EVI ont été générées sur la fenêtre complète disponible ; les fenêtres 2010-fin et 2015-fin sont exclues car elles n'ont pas 120 mois.
-- [ ] Les requêtes GET réelles de MERRA-2, GLDAS, GPM, AIRS et OMI échouent avec `EULA Acceptance Failure` malgré l'authentification Earthdata. URL d'autorisation GES DISC transmise à l'utilisateur ; en attente d'acceptation avant nouvelle vérification. Les champs et unités restent explicitement à confirmer au niveau des fichiers.
+- [x] Après approbation Earthdata de NASA GESDISC DATA ARCHIVE, requêtes CMR authentifiées réussies pour MERRA-2, GLDAS, GPM, AIRS et OMI ; lectures Range HTTP 206 réelles de 4 Ko obtenues pour chaque lien de fichier.
+- [x] Granules réels GPM, OMI et AIRS téléchargés. Métadonnées confirmées dans les fichiers : GPM `Grid/precipitation` en mm/hr, `TimeInterval=MONTH`, DOI 10.5067/GPM/IMERG/3B-MONTH/07 ; OMI `ColumnAmountNO2TropCloudScreened` en molec/cm2. Le champ AIRS `SurfAirTemp_A` et son unité K sont confirmés par l'échantillon et le guide NASA ; il reste à construire sa série multi-annuelle.
+- [ ] Téléchargement du jeu historique GPM (309 granules mensuels, 2000-01–2025-09) en cours ; ingestion, tests, tendances et cartes à terminer avant son activation.
+- [x] Adaptateurs GPM mensuel et OMI quotidien-vers-mensuel ajoutés avec tests de grille, Fill, unités et dates ; l'agrégation OMI est préparée pour une série 2005–2014. Les téléchargements historiques et produits d'analyse OMI restent à exécuter.
+- [x] `make test` passe avec les nouveaux tests GPM/OMI (39 tests au total) ; Ruff passe sur les modules d'ingestion et les fichiers API/pipeline modifiés.
 
 ## Decisions and blockers
 
@@ -116,5 +120,5 @@ Updated: 2026-11-01
 - M2, M3, M4, M5, and M6 are partial; do not describe them as accepted until the unchecked requirements above pass.
 - Milestone branches exist for M2, M4, M5, and M6; only the M0/M1 baseline is on `main`. Do not merge incomplete milestones.
 - M8 has not started: the brief requires a public host, domain, deployment access, open ports 80/443, and an HTTPS end-to-end check. No alternative host has been selected.
-- GISTEMP, MODIS NDVI, and MODIS EVI pass local data/trend/tile generation. Water and air products remain blocked by GES DISC EULA acceptance; a third independent Earth-system domain is required by the challenge and is not ready yet.
+- GISTEMP, MODIS NDVI, and MODIS EVI pass local data/trend/tile generation. GES DISC authorization is now verified. GPM precipitation is being integrated for the water domain; OMI has a tested daily-to-monthly adapter, but its historical granules and analysis products are not yet present.
 - Do not start or extend M7 before M8. The comparison and Rigorous result controls are not shown in the MVP frontend.

@@ -61,11 +61,11 @@
   short_name: M2TMNXFLX
   version: 5.12.4
   doi: 10.5067/0JRLVL8YV2Y4
-  unit: kg m-2 s-1
+  unit: pending file-level verification
   frequency: monthly
   grid: 0.5 x 0.625 degree source; 2 degree analysis target
   period: 1980-present in collection metadata
-  integration_status: access_blocked_ges_disc_eula
+  integration_status: access_verified_field_pending
   access:
     type: earthaccess
     short_name: M2TMNXFLX
@@ -77,11 +77,11 @@
   short_name: GLDAS_NOAH025_M
   version: 2.1
   doi: 10.5067/SXAVCZFAQLNO
-  unit: pending file-level metadata
+  unit: pending file-level verification
   frequency: monthly
   grid: 0.25 degree source; 2 degree analysis target
   period: 2000-present in collection metadata
-  integration_status: access_blocked_ges_disc_eula
+  integration_status: access_verified_field_pending
   access:
     type: earthaccess
     short_name: GLDAS_NOAH025_M
@@ -93,26 +93,26 @@
   short_name: GPM_3IMERGM
   version: "07"
   doi: 10.5067/GPM/IMERG/3B-MONTH/07
-  unit: pending file-level metadata
+  unit: mm/hr
   frequency: monthly
   grid: 0.1 degree source; 2 degree analysis target
-  period: 2000-present in collection metadata
-  integration_status: access_blocked_ges_disc_eula
+  period: 2000-01 to 2025-09 (309 monthly granules returned by CMR)
+  integration_status: access_verified_acquiring
   access:
     type: earthaccess
     short_name: GPM_3IMERGM
     version: "07"
-- id: airs_monthly_support
-  name: AIRS monthly support product
-  name_fr: Produit mensuel de support AIRS
-  source: NASA AIRS/Aqua Support product, Version 7.0 (AIRS3STM)
+- id: airs_surface_air_temp
+  name: AIRS monthly surface air temperature
+  name_fr: Température de l'air en surface mensuelle AIRS
+  source: NASA AIRS/Aqua L3 Standard Physical Retrieval (AIRS-only), Version 7.0 (AIRS3STM)
   short_name: AIRS3STM
   version: 7.0
   doi: 10.5067/UBENJB9D3T2H
-  unit: pending file-level metadata
+  unit: K
   frequency: monthly
   period: 2002 onward
-  integration_status: access_blocked_ges_disc_eula
+  integration_status: sample_downloaded
   access:
     type: earthaccess
     short_name: AIRS3STM
@@ -124,10 +124,10 @@
   short_name: OMNO2d
   version: "004"
   doi: 10.5067/AURA/OMI/DATA3407
-  unit: pending file-level metadata
+  unit: molec/cm2
   frequency: daily (monthly aggregation required)
-  period: 2004 onward
-  integration_status: access_blocked_ges_disc_eula
+  period: 2004 onward in collection metadata; local monthly aggregation pending
+  integration_status: access_verified_acquiring
   access:
     type: earthaccess
     short_name: OMNO2d

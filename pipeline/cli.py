@@ -22,6 +22,14 @@ def main() -> None:
     if args.stage == "ingest":
         if args.variable == "gistemp_tas_anom":
             print(ingest_gistemp())
+        elif args.variable == "gpm_precipitation":
+            from pipeline.ingest.gpm_precipitation import ingest as ingest_gpm
+
+            print(ingest_gpm())
+        elif args.variable == "omi_no2":
+            from pipeline.ingest.omi_no2 import ingest as ingest_omi
+
+            print(ingest_omi())
         else:
             from pipeline.ingest.modis_vegetation import download_modis, prepare_modis
 
@@ -34,6 +42,14 @@ def main() -> None:
             from pipeline.ingest.gistemp import prepare_gistemp
 
             print(prepare_gistemp())
+        elif args.variable == "gpm_precipitation":
+            from pipeline.ingest.gpm_precipitation import prepare_gpm
+
+            print(prepare_gpm())
+        elif args.variable == "omi_no2":
+            from pipeline.ingest.omi_no2 import prepare_omi
+
+            print(prepare_omi())
         else:
             from pipeline.ingest.modis_vegetation import prepare_modis
 
@@ -58,13 +74,14 @@ def main() -> None:
         }
         output_root = Path("data/processed") / args.variable
         for name, (start, end) in windows.items():
+            seasonal_adjustment = bool(config.get("remove_monthly_climatology", False))
             selected = source[config["field"]]
             if start or end:
                 selected = selected.sel(time=slice(start, end))
-            if args.variable.startswith("modis_") and selected.sizes.get("time", 0) < 120:
+            if selected.sizes.get("time", 0) < 120:
                 print(f"Skipping {name}: fewer than 120 monthly records are available.")
                 continue
-            if args.variable.startswith("modis_"):
+            if seasonal_adjustment:
                 monthly_climatology = selected.groupby("time.month").mean(
                     "time", skipna=True
                 )
@@ -84,7 +101,7 @@ def main() -> None:
                     "source": config["source"],
                     "seasonal_adjustment": (
                         "Removed per grid cell using the window's monthly climatology."
-                        if args.variable.startswith("modis_")
+                        if seasonal_adjustment
                         else "Source GISTEMP values are already monthly anomalies."
                     ),
                 }

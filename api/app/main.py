@@ -149,10 +149,11 @@ CATALOG = [
         "unit": "mm/hr",
         "definition": "Monthly mean precipitation rate from the NASA GPM IMERG product.",
         "definition_fr": "Taux mensuel moyen de précipitations du produit NASA GPM IMERG.",
-        "period": "2000-01 to 2025-09 in CMR; local processing pending",
+        "period": "2000-01 to 2025-09; monthly",
         "limitations": (
             "Satellite precipitation estimates; uncertainty varies by surface and regime."
         ),
+        "windows": ["full", "2010-fin", "2015-fin"],
         "source": "NASA GPM IMERG v07",
         "doi": "10.5067/GPM/IMERG/3B-MONTH/07",
         "short_name": "GPM_3IMERGM",

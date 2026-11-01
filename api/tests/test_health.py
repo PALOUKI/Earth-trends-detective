@@ -26,12 +26,15 @@ def test_catalog_suggestions_and_regions_have_contract_fields() -> None:
     variables = _request("/api/variables")
     regions = _request("/api/regions")
     suggestions = _request("/api/suggest?theme=water")
+    catalog = _request("/api/catalog")
 
     assert variables.status_code == regions.status_code == suggestions.status_code == 200
     assert variables.json()[0]["id"] == "gistemp_tas_anom"
     assert "definition" in variables.json()[0]
     assert regions.json()[0]["geometry_type"] == "illustrative_rectangle"
-    assert suggestions.json()[0]["available"] is False
+    gpm = next(item for item in catalog.json() if item["id"] == "gpm_precipitation")
+    assert suggestions.json()[0]["variable"] == "gpm_precipitation"
+    assert suggestions.json()[0]["available"] is (gpm["status"] == "analysis_ready")
 
 
 def test_catalog_distinguishes_ready_sample_and_access_blocked_products() -> None:
@@ -50,6 +53,7 @@ def test_catalog_distinguishes_ready_sample_and_access_blocked_products() -> Non
     assert products["modis_ndvi"]["doi"] == "10.5067/MODIS/MOD13C2.061"
     assert products["merra2_flux"]["status"] == "acquiring"
     assert products["gpm_precipitation"]["unit"] == "mm/hr"
+    assert products["gpm_precipitation"]["windows"] == ["full", "2010-fin", "2015-fin"]
     assert products["gpm_precipitation"]["status"] in {
         "acquiring",
         "series_processed",

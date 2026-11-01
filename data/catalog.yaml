@@ -96,8 +96,8 @@
   unit: mm/hr
   frequency: monthly
   grid: 0.1 degree source; 2 degree analysis target
-  period: 2000-01 to 2025-09 (309 monthly granules returned by CMR)
-  integration_status: access_verified_acquiring
+  period: 2000-01 to 2025-09 (309 monthly granules processed locally)
+  integration_status: analysis_ready
   access:
     type: earthaccess
     short_name: GPM_3IMERGM

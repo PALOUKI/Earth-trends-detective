@@ -1,6 +1,6 @@
 # Earth Trends Detective
 
-An educational, reproducible tool for investigating linear changes across NASA Earth science variables. GISTEMP and MODIS NDVI/EVI are analysis-ready. GPM precipitation and OMI tropospheric NO₂ are being integrated from files verified after Earthdata application authorization; AIRS has a downloaded sample, while MERRA-2 and GLDAS have verified access but still need field inspection. A product is selectable for analysis only after its real time series and trend maps have been processed.
+An educational, reproducible tool for investigating linear changes across NASA Earth science variables. GISTEMP, MODIS NDVI/EVI, and GPM IMERG precipitation are analysis-ready. OMI tropospheric NO₂ is being integrated from verified daily files; AIRS has a downloaded sample, while MERRA-2 and GLDAS have verified access but still need field inspection. A product is selectable for analysis only after its real time series and trend maps have been processed.
 
 **Data access:** NASA GISS publishes the selected public GISTEMP gridded NetCDF at [its data downloads page](https://data.giss.nasa.gov/gistemp/data_v4.html). Dataset attribution and access details are recorded in the application and [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md).
 
@@ -41,4 +41,4 @@ The deployment script transfers processed Zarr, trend COGs, and XYZ map tiles fo
 
 ## Résumé français
 
-Détective des tendances du système terrestre est un outil pédagogique et reproductible pour analyser plusieurs variables NASA. GISTEMP et MODIS NDVI/EVI sont analysables ; les données GPM (précipitations) et OMI (NO₂ troposphérique) sont en cours d'intégration après validation de l'accès Earthdata. AIRS a un échantillon réel vérifié. Une variable n'est activée qu'après l'ingestion réelle et la génération des analyses et cartes.
+Détective des tendances du système terrestre est un outil pédagogique et reproductible pour analyser plusieurs variables NASA. GISTEMP, MODIS NDVI/EVI et les précipitations GPM IMERG sont analysables ; OMI (NO₂ troposphérique) est en cours d'intégration. AIRS a un échantillon réel vérifié. Une variable n'est activée qu'après l'ingestion réelle et la génération des analyses et cartes.

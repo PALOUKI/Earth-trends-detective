@@ -32,7 +32,7 @@ Live authenticated CMR searches confirmed the short names, versions, and granule
 | --- | --- | --- | --- | --- |
 | MERRA-2 monthly single-level flux diagnostics | `M2TMNXFLX` | 5.12.4 | [10.5067/0JRLVL8YV2Y4](https://doi.org/10.5067/0JRLVL8YV2Y4) | Authenticated file bytes verified; inspect sample fields next |
 | GLDAS Noah monthly 0.25° | `GLDAS_NOAH025_M` | 2.1 | [10.5067/SXAVCZFAQLNO](https://doi.org/10.5067/SXAVCZFAQLNO) | Authenticated file bytes verified; inspect sample fields next |
-| GPM IMERG Final monthly | `GPM_3IMERGM` | 07 | [10.5067/GPM/IMERG/3B-MONTH/07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07) | Sample decoded: `Grid/precipitation`, mm/hr; 309 CMR granules, Jan 2000–Sep 2025; download running |
+| GPM IMERG Final monthly | `GPM_3IMERGM` | 07 | [10.5067/GPM/IMERG/3B-MONTH/07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07) | 309 real granules ingested; `Grid/precipitation`, mm/hr; trend grids and XYZ tiles generated for 2000-01–2025-09 |
 | AIRS/Aqua monthly standard product | `AIRS3STM` | 7.0 | [10.5067/UBENJB9D3T2H](https://doi.org/10.5067/UBENJB9D3T2H) | Sample downloaded; `SurfAirTemp_A` is surface atmospheric temperature, K, per NASA V7 L3 guide |
 | OMI daily tropospheric NO₂ | `OMNO2d` | 004 | [10.5067/AURA/OMI/DATA3407](https://doi.org/10.5067/AURA/OMI/DATA3407) | Sample decoded: `ColumnAmountNO2TropCloudScreened`, molec/cm²; daily-to-monthly aggregation pending |
 

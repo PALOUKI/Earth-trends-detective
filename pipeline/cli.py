@@ -45,6 +45,17 @@ def main() -> None:
             print(output)
         source.close()
         return
+    if args.stage == "tiles":
+        from pathlib import Path
+
+        from pipeline.tiling.render import render_trend_map
+
+        for window in ("full", "2010-fin", "2015-fin"):
+            trends = Path("data/processed") / args.variable / f"trend_{window}.zarr"
+            output = Path("data/tiles") / args.variable / window
+            render_trend_map(trends, output)
+            print(output)
+        return
     raise SystemExit(f"Pipeline stage {args.stage!r} is not implemented yet.")
 
 

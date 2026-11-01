@@ -1,0 +1,1 @@
+"""Static raster rendering helpers."""

@@ -20,6 +20,8 @@ The advanced p-value uses the Hamed-Rao modified Mann-Kendall procedure, through
 
 Spatial maps apply Benjamini-Hochberg false discovery rate correction with `alpha=0.10` across finite p-values. This is the project brief's chosen exploratory map threshold. It controls the expected false-discovery proportion under independence or certain positive dependence, not the probability of any false pixel. Under strong arbitrary spatial dependence, Benjamini-Yekutieli is a more conservative alternative.
 
+For computation at global 2° resolution, the discovery map uses the vectorized OLS slope and t-test p-value with FDR. The selected-region result remains the full analysis: OLS, Sen, classic Mann-Kendall, and Hamed-Rao. This keeps the map responsive while preserving the challenge's primary variable-plus-region workflow. The map endpoint metadata identifies its test as OLS.
+
 ## Limitations
 
 Results describe statistical change, not its cause. Conclusions depend on the selected region and time window. Short periods, spatially varying data coverage, autocorrelation, and GISTEMP's blended land/ocean analysis affect interpretation. A trend can be interesting without meeting a significance threshold. Analysis is limited to linear trend summaries; it does not imply that the climate signal itself is linear.

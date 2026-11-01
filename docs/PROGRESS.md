@@ -31,8 +31,10 @@ Updated: 2026-11-01
 - [x] Added cosine-latitude weighted regional mean extraction with explicit missing-cell handling and month-start period slicing.
 - [x] Implemented monthly deseasonalization for display, OLS slope/95% CI/t test, Sen slope/95% CI, classic Mann-Kendall, and Hamed-Rao adjusted Mann-Kendall.
 - [x] Added Dask-backed `xarray.apply_ufunc` OLS map analysis and Benjamini-Hochberg FDR (`alpha=0.10`).
-- [ ] The brief's per-pixel grid output requires Sen, classic Mann-Kendall, Hamed-Rao, and the specified `numba @njit(parallel=True)` implementation; the current map only calculates OLS and FDR. M2 is therefore not accepted.
-- [ ] The required `--annual` robustness option, full output Zarr variables, false-positive simulation, and specified full-grid performance measurement are not implemented/verified.
+- [x] Implemented per-pixel OLS slope/95% CI/t-test, Sen slope/95% CI, classic Mann-Kendall, Hamed-Rao, and FDR with Numba `@njit(parallel=True)`, `xarray.apply_ufunc`, and Dask. FDR uses Hamed-Rao p-values.
+- [x] Added equivalence tests against SciPy and pyMannKendall over 1,000 seeded pixels, including tied and missing-value cases; added no-trend false-positive simulation for MK and Hamed-Rao.
+- [x] Added `--annual` monthly-vs-annual sign/significance concordance outputs, full trend-statistic Zarr schema, and a multiband EPSG:4326 COG writer with named bands.
+- [ ] Full-grid benchmark: 16,200 cells × 1,761 months ran in 161.42 seconds on this 4-core container, above the brief's <120 second target. M2 remains partial pending optimization or a documented resource-qualified target.
 
 ## M3 — scientific validation (partial)
 
@@ -44,21 +46,24 @@ Updated: 2026-11-01
 
 ## M4 — map products and visual encoding (XYZ generation implemented; depends on incomplete M2 map statistics)
 
-- [x] Generated OLS trend grids and Benjamini-Hochberg significance masks for `full`, `2010-fin`, and `2015-fin` from the actual GISTEMP Zarr.
+- [x] Generated full OLS, Sen, classic Mann-Kendall, Hamed-Rao, and Hamed-Rao/BH significance grids for `full`, `2010-fin`, and `2015-fin` from the actual GISTEMP Zarr.
+- [x] `make trends` writes the complete metric set to Zarr and a 12-band EPSG:4326 COG. `make trends TRENDS_FLAGS=--annual` additionally writes annual slope/p/significance and monthly-vs-annual concordance fields.
 - [x] Replaced the earlier single-image overlay (which did not meet the brief) with pinned `rio-tiler==9.4.9` raster XYZ tiles for the slope and nonsignificance stipple layers, zooms 0–5.
 - [x] Tile files are laid out under `data/tiles/<id>/<window>/<layer>/{z}/{x}/{y}.png`; `/api/trend` returns tile URL templates, and Caddy serves tiles with long cache headers.
 - [x] Palette is diverging and centered on zero, with symmetric clipping at the 98th percentile of absolute slopes; layer metadata includes K/year, bounds, scale, and interpretation.
 - [x] Tests verify XYZ paths, palette metadata, zoom bounds, and tile serving. Full XYZ layers were generated for all three windows from the current OLS/FDR data.
-- [ ] The map's statistical layers still depend on M2's OLS/FDR-only output; rerun after the required per-pixel base/rigorous outputs are implemented.
+- [x] Rebuilt all XYZ windows from full M2 outputs. The color layer is OLS slope, and the stipple layer reflects Hamed-Rao p-values after Benjamini-Hochberg FDR.
 
 ## M5 — API (partial)
 
 - [x] FastAPI routes are implemented for health, variables, suggestions, regions, regional analysis, point analysis, comparisons, trend metadata, and XYZ tiles.
-- [x] Added `GET /api/export`: regional monthly series as CSV and precomputed map layers as PNG.
+- [x] Added `GET /api/export`: regional monthly series as CSV, precomputed map layers as PNG, and generated multiband GeoTIFFs.
 - [x] Added Pydantic response models for variables, analyses, comparisons, and map metadata.
 - [x] Added Pydantic response models to the region and point endpoints.
 - [ ] Broader contract checks against every field and behavior required by section 12 remain; M5 is not accepted yet.
-- [ ] The required regional on-demand rupture result is missing.
+- [x] Added on-demand Pettitt statistics (candidate date, analytic p-value, statistic, verdict) to point/region API responses; tests verify the rank statistic, analytic formula, and mapping to the original date. The frontend marker remains post-deployment M7.
+- [x] `/api/suggest` now returns a matching predefined region ID alongside a variable suggestion; unsupported themes remain explicitly unavailable until data exist.
+- [x] `/api/trend` includes map-wide valid/significant/non-significant cell counts when its processed Zarr is present.
 - [x] Deterministic summaries are provided in English and French; OpenAPI docs are available at `/docs`.
 - [x] Async HTTP contract tests cover the catalog, health, map layers, regional analysis, and clicked point response.
 - [x] Tests use `httpx` ASGI calls and synthetic fixture datasets; all API endpoint tests pass.
@@ -86,9 +91,8 @@ Updated: 2026-11-01
 ## M8 preparation and required access
 
 - [x] Added API and web Dockerfiles, Compose topology, Caddy HTTPS routing, persistent certificate storage, restart policies, and read-only processed-data mounts. `docker compose config` succeeds.
-- [ ] `make deploy` currently starts Compose locally; it does not send the derived Zarr/tiles to a remote host as required by section 14.
-- [ ] Deployment requires the server address, SSH user plus key path (or an agent configured with that key), a public domain pointed to the host, and confirmation that inbound 80/443 are open.
-- [ ] Set `SITE_DOMAIN` in the server's ignored `.env` file. Deployed GISTEMP data do not require Earthdata credentials.
+- [x] `make deploy` now invokes `deploy/deploy.sh`, which sends source and only processed GISTEMP Zarr/COG/XYZ outputs over SSH/rsync, builds Compose remotely, and checks the HTTPS health endpoint.
+- [ ] Remote execution remains blocked until the host, SSH user/key access, public DNS domain, and inbound 80/443 status are supplied. Deployed GISTEMP data do not require Earthdata credentials.
 
 ## M0 acceptance summary
 

@@ -12,6 +12,8 @@ def make_summary(
     p_mk: float | None,
     unit: str = "K/year",
     break_result: object | None = None,
+    variable_name: str = "Surface temperature anomaly",
+    variable_name_fr: str = "L’anomalie de température de surface",
 ) -> dict[str, str]:
     if slope is None or lo is None or hi is None:
         return {
@@ -61,12 +63,12 @@ def make_summary(
             )
     return {
         "en": (
-            f"Surface temperature anomaly {direction_en} in {label} by {slope:.4f} {unit} "
+            f"{variable_name} {direction_en} in {label} by {slope:.4f} {unit} "
             f"(95% confidence interval {lo:.4f} to {hi:.4f}); the linear trend is "
             f"{verdict_en} by the t test. {tests_en}{break_en}{caveat_en}"
         ),
         "fr": (
-            f"L’anomalie de température de surface a {direction_fr} dans {label} de "
+            f"{variable_name_fr} a {direction_fr} dans {label} de "
             f"{slope:.4f} {unit} (intervalle de confiance à 95 % : {lo:.4f} à {hi:.4f}) ; "
             f"la tendance linéaire est {verdict_fr} selon le test t. "
             f"{tests_fr}{break_fr}{caveat_fr}"

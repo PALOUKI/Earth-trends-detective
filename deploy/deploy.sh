@@ -31,7 +31,7 @@ fi
 printf -v rsync_ssh '%q ' ssh "${ssh_options[@]}"
 
 ssh "${ssh_options[@]}" "$remote" \
-  "mkdir -p '$remote_dir/data/processed' '$remote_dir/data/tiles/gistemp_tas_anom' '$remote_dir/data/processed/gistemp_tas_anom'"
+  "mkdir -p '$remote_dir/data/processed' '$remote_dir/data/tiles'"
 rsync -az -e "$rsync_ssh" \
   --exclude='.git/' \
   --exclude='.venv/' \
@@ -42,16 +42,13 @@ rsync -az -e "$rsync_ssh" \
   --exclude='data/tiles/' \
   "$repo_root/" "$remote:$remote_dir/"
 
-# Upload only processed GISTEMP products; raw NASA source files stay local.
+# Upload processed variables and map tiles; raw NASA source files stay local.
 rsync -az -e "$rsync_ssh" \
-  "$repo_root/data/processed/gistemp_tas_anom.zarr" \
+  "$repo_root/data/processed/" \
   "$remote:$remote_dir/data/processed/"
 rsync -az -e "$rsync_ssh" \
-  "$repo_root/data/processed/gistemp_tas_anom/" \
-  "$remote:$remote_dir/data/processed/gistemp_tas_anom/"
-rsync -az -e "$rsync_ssh" \
-  "$repo_root/data/tiles/gistemp_tas_anom/" \
-  "$remote:$remote_dir/data/tiles/gistemp_tas_anom/"
+  "$repo_root/data/tiles/" \
+  "$remote:$remote_dir/data/tiles/"
 
 ssh "${ssh_options[@]}" "$remote" \
   "cd '$remote_dir' && printf '%s\\n' 'SITE_DOMAIN=$SITE_DOMAIN' > .env && docker compose up --build -d"

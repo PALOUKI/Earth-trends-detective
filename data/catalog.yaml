@@ -23,13 +23,13 @@
   doi: 10.5067/MODIS/MOD13C2.061
   unit: "1"
   frequency: monthly
-  grid: 0.05 degree source; planned 2 degree analysis grid
-  period: 2000-02 onward (granules available in CMR; complete time-series ingest pending)
+  grid: 0.05 degree source; 2 degree analysis grid
+  period: 2000-02 to 2011-08 (139 consecutive monthly records locally processed)
   higher_is: greener vegetation signal (subject to product limitations)
   description: Monthly MODIS normalized difference vegetation index. Source integers are scaled by 1/10000; only reliability ranks 0 and 1 are retained in the ingest adapter.
   description_fr: Indice mensuel de végétation normalisé MODIS. Les valeurs entières sont mises à l'échelle par 1/10000 ; l'adaptateur conserve les rangs de fiabilité 0 et 1.
-  limitations: Satellite vegetation-index proxy; clouds, snow, aerosols, viewing conditions, and land cover affect retrievals. The time series and full trend products have not yet been ingested.
-  integration_status: source_verified_sample_downloaded
+  limitations: Satellite vegetation-index proxy; clouds, snow, aerosols, viewing conditions, and land cover affect retrievals. Current local analysis ends in 2011-08 because later granules are not all available locally.
+  integration_status: analysis_ready
   access:
     type: earthaccess
     short_name: MOD13C2
@@ -43,20 +43,20 @@
   doi: 10.5067/MODIS/MOD13C2.061
   unit: "1"
   frequency: monthly
-  grid: 0.05 degree source; planned 2 degree analysis grid
-  period: 2000-02 onward (granules available in CMR; complete time-series ingest pending)
+  grid: 0.05 degree source; 2 degree analysis grid
+  period: 2000-02 to 2011-08 (139 consecutive monthly records locally processed)
   higher_is: stronger enhanced vegetation signal (subject to product limitations)
   description: Monthly MODIS enhanced vegetation index; source integers are scaled by 1/10000.
   description_fr: Indice mensuel de végétation amélioré MODIS ; les valeurs entières sont mises à l'échelle par 1/10000.
-  limitations: Satellite vegetation-index proxy; clouds, snow, aerosols, viewing conditions, and land cover affect retrievals. The time series and full trend products have not yet been ingested.
-  integration_status: source_verified_sample_downloaded
+  limitations: Satellite vegetation-index proxy; clouds, snow, aerosols, viewing conditions, and land cover affect retrievals. Current local analysis ends in 2011-08 because later granules are not all available locally.
+  integration_status: analysis_ready
   access:
     type: earthaccess
     short_name: MOD13C2
     version: "061"
-- id: merra2_precipitation
-  name: MERRA-2 precipitation
-  name_fr: Précipitations MERRA-2
+- id: merra2_flux
+  name: MERRA-2 monthly flux diagnostics
+  name_fr: Diagnostics mensuels de flux MERRA-2
   source: NASA GMAO MERRA-2 monthly single-level diagnostics, Version 5.12.4 (M2TMNXFLX)
   short_name: M2TMNXFLX
   version: 5.12.4
@@ -70,14 +70,14 @@
     type: earthaccess
     short_name: M2TMNXFLX
     version: 5.12.4
-- id: gldas_soil_moisture
-  name: GLDAS Noah soil moisture
-  name_fr: Humidité du sol GLDAS Noah
+- id: gldas_noah_monthly
+  name: GLDAS Noah monthly land-surface fields
+  name_fr: Variables mensuelles de surface terrestre GLDAS Noah
   source: NASA GLDAS Noah monthly 0.25 degree, Version 2.1
   short_name: GLDAS_NOAH025_M
   version: 2.1
   doi: 10.5067/SXAVCZFAQLNO
-  unit: kg m-2
+  unit: pending file-level metadata
   frequency: monthly
   grid: 0.25 degree source; 2 degree analysis target
   period: 2000-present in collection metadata
@@ -93,7 +93,7 @@
   short_name: GPM_3IMERGM
   version: "07"
   doi: 10.5067/GPM/IMERG/3B-MONTH/07
-  unit: mm/month
+  unit: pending file-level metadata
   frequency: monthly
   grid: 0.1 degree source; 2 degree analysis target
   period: 2000-present in collection metadata
@@ -102,3 +102,33 @@
     type: earthaccess
     short_name: GPM_3IMERGM
     version: "07"
+- id: airs_monthly_support
+  name: AIRS monthly support product
+  name_fr: Produit mensuel de support AIRS
+  source: NASA AIRS/Aqua Support product, Version 7.0 (AIRS3STM)
+  short_name: AIRS3STM
+  version: 7.0
+  doi: 10.5067/UBENJB9D3T2H
+  unit: pending file-level metadata
+  frequency: monthly
+  period: 2002 onward
+  integration_status: access_blocked_ges_disc_eula
+  access:
+    type: earthaccess
+    short_name: AIRS3STM
+    version: 7.0
+- id: omi_no2
+  name: OMI tropospheric nitrogen dioxide
+  name_fr: Dioxyde d'azote troposphérique OMI
+  source: NASA Aura OMI Daily Level-3 Global Gridded Product, Version 004 (OMNO2d)
+  short_name: OMNO2d
+  version: "004"
+  doi: 10.5067/AURA/OMI/DATA3407
+  unit: pending file-level metadata
+  frequency: daily (monthly aggregation required)
+  period: 2004 onward
+  integration_status: access_blocked_ges_disc_eula
+  access:
+    type: earthaccess
+    short_name: OMNO2d
+    version: "004"

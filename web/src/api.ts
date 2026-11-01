@@ -12,6 +12,7 @@ export interface VariableInfo {
   status_detail?: string
   source?: string
   short_name?: string | null
+  doi?: string
 }
 
 export interface RegionInfo {
@@ -40,6 +41,7 @@ export interface Analysis {
   variable: string
   label: string
   unit: string
+  rate_unit: string
   bounds?: Record<string, number>
   location?: { lat: number; lon: number }
   period: { start: string; end: string }

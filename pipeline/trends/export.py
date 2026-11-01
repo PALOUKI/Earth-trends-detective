@@ -54,6 +54,9 @@ def write_trend_cog(dataset: xr.Dataset, destination: Path) -> Path:
             target.write(array)
             for index, name in enumerate(_BANDS, start=1):
                 target.set_band_description(index, name)
+                unit = dataset[name].attrs.get("units")
+                if unit:
+                    target.update_tags(index, units=str(unit))
         raster_copy(
             intermediate,
             destination,

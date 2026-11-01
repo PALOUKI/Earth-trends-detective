@@ -1,7 +1,8 @@
-export function formatRate(value: number | null | undefined, unit = 'K'): string {
+export function formatRate(value: number | null | undefined, unit = 'K/year'): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—'
   const scaled = value * 10
-  return `${scaled >= 0 ? '+' : ''}${scaled.toFixed(2)} ${unit} / decade`
+  const decadeUnit = unit.replace(/\/year$/, '/decade')
+  return `${scaled >= 0 ? '+' : ''}${scaled.toFixed(2)} ${decadeUnit}`
 }
 
 export function formatPValue(value: number | null | undefined): string {

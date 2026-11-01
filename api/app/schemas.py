@@ -74,6 +74,7 @@ class AnalysisResponse(BaseModel):
     label: str
     source: str
     unit: str
+    rate_unit: str
     bounds: dict[str, float] | None = None
     location: dict[str, float] | None = None
     period: dict[str, str]

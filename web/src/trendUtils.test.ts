@@ -3,8 +3,9 @@ import { fittedLine, formatPValue, formatRate, normalizeLongitude } from './tren
 
 describe('trend display helpers', () => {
   it('formats K/year slopes as signed K/decade rates', () => {
-    expect(formatRate(0.023)).toBe('+0.23 K / decade')
-    expect(formatRate(-0.01)).toBe('-0.10 K / decade')
+    expect(formatRate(0.023)).toBe('+0.23 K/decade')
+    expect(formatRate(-0.01)).toBe('-0.10 K/decade')
+    expect(formatRate(0.002, 'index/year')).toBe('+0.02 index/decade')
     expect(formatRate(null)).toBe('—')
   })
 

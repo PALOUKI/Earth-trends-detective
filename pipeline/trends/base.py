@@ -88,7 +88,7 @@ def apply_fdr(p_values: np.ndarray, alpha: float = 0.10) -> np.ndarray:
 
 
 def classify_sign(slope: np.ndarray, significant: np.ndarray) -> np.ndarray:
-    """Encode significant warming as 1, cooling as -1, and other cells as 0."""
+    """Encode significant positive trends as 1, negative as -1, and other cells as 0."""
     slope_values, sig = np.broadcast_arrays(np.asarray(slope, dtype=float), significant)
     classes = np.zeros(slope_values.shape, dtype=np.int8)
     classes[sig & (slope_values > 0)] = 1
@@ -96,8 +96,13 @@ def classify_sign(slope: np.ndarray, significant: np.ndarray) -> np.ndarray:
     return classes
 
 
-def analyze_grid(data: xr.DataArray, alpha_fdr: float = 0.10) -> xr.Dataset:
+def analyze_grid(
+    data: xr.DataArray,
+    alpha_fdr: float = 0.10,
+    slope_unit: str = "K/year",
+    source: str = "NASA GISS GISTEMP v4",
+) -> xr.Dataset:
     """Run Base and Hamed-Rao pixel statistics with Numba and Dask parallelism."""
     from pipeline.trends.numba_grid import analyze_grid_numba
 
-    return analyze_grid_numba(data, alpha_fdr=alpha_fdr)
+    return analyze_grid_numba(data, alpha_fdr=alpha_fdr, slope_unit=slope_unit, source=source)

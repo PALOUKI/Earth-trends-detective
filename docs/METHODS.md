@@ -2,11 +2,11 @@
 
 ## Monthly regional anomaly series
 
-The GISTEMP v4 source already contains monthly anomalies. For a rectangular region, the MVP averages included grid cells with a cosine-of-latitude area weight. Missing cells are omitted independently at each month. The monthly climatology of the selected analysis period is removed for the displayed deseasonalized series; statistics use that deseasonalized series.
+For a rectangular region, the application averages included grid cells with a cosine-of-latitude area weight. Missing cells are omitted independently at each month. GISTEMP v4 already contains monthly temperature anomalies; MODIS vegetation indices use a monthly climatology removed per grid cell before trend calculation. The regional display also removes the selected period's monthly climatology. Statistics use the deseasonalized series.
 
 ## Base trend
 
-Ordinary least squares fits `y = a + b t` with time measured in years. The reported slope is `b` in K/year. A two-sided Student t test uses `n - 2` degrees of freedom. Its 95% confidence interval is `b ± t(0.975, n-2) × SE(b)`. This assumes a linear relationship and independent, normally distributed residuals; serial correlation can make the basic test too optimistic.
+Ordinary least squares fits `y = a + b t` with time measured in years. The slope unit follows the selected variable (for example K/year for GISTEMP and index/year for MODIS NDVI/EVI). A two-sided Student t test uses `n - 2` degrees of freedom. Its 95% confidence interval is `b ± t(0.975, n-2) × SE(b)`. This assumes a linear relationship and independent, normally distributed residuals; serial correlation can make the basic test too optimistic.
 
 Sen's slope is the median of all pairwise slopes `(y[j]-y[i])/(t[j]-t[i])`. Its confidence bounds use SciPy's `theilslopes` implementation at 95%. Mann-Kendall tests for a monotonic trend without requiring normally distributed values. These tests are complementary: the OLS line estimates linear change, while Sen and Mann-Kendall are robust rank-based measures.
 

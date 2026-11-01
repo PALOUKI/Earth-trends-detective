@@ -61,8 +61,20 @@ def main() -> None:
             selected = source[config["field"]]
             if start or end:
                 selected = selected.sel(time=slice(start, end))
+            if args.variable.startswith("modis_") and selected.sizes.get("time", 0) < 120:
+                print(f"Skipping {name}: fewer than 120 monthly records are available.")
+                continue
+            if args.variable.startswith("modis_"):
+                monthly_climatology = selected.groupby("time.month").mean(
+                    "time", skipna=True
+                )
+                selected = selected.groupby("time.month") - monthly_climatology
             stats_started = time.perf_counter()
-            result = analyze_grid(selected.chunk({"time": -1, "lat": -1, "lon": -1}))
+            result = analyze_grid(
+                selected.chunk({"time": -1, "lat": -1, "lon": -1}),
+                slope_unit=str(config["rate_unit"]),
+                source=str(config["source"]),
+            )
             print(f"{name} monthly grid statistics: {time.perf_counter() - stats_started:.2f}s")
             result.attrs.update(
                 {
@@ -70,6 +82,11 @@ def main() -> None:
                     "window": name,
                     "temporal_resolution": "monthly",
                     "source": config["source"],
+                    "seasonal_adjustment": (
+                        "Removed per grid cell using the window's monthly climatology."
+                        if args.variable.startswith("modis_")
+                        else "Source GISTEMP values are already monthly anomalies."
+                    ),
                 }
             )
             if args.annual:
@@ -80,7 +97,9 @@ def main() -> None:
                 )
                 annual_started = time.perf_counter()
                 annual_result = analyze_grid(
-                    annual.chunk({"time": -1, "lat": -1, "lon": -1})
+                    annual.chunk({"time": -1, "lat": -1, "lon": -1}),
+                    slope_unit=str(config["rate_unit"]),
+                    source=str(config["source"]),
                 )
                 annual_result.n_valid.attrs["units"] = "years"
                 print(

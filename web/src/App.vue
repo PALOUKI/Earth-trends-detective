@@ -32,13 +32,13 @@ const copy = {
     significant: 'Significant', notSignificant: 'Not (yet) significant', insufficient: 'Not enough data',
     longerPeriod: 'A longer time period could change this significance result.',
     ols: 'OLS t test', mk: 'Mann–Kendall', hr: 'Hamed–Rao',
-    raw: 'Monthly anomaly', deseasoned: 'Deseasonalized', trend: 'Linear trend',
+    raw: 'Monthly values', deseasoned: 'Deseasonalized', trend: 'Linear trend',
     guided: 'Guided investigation', demo: 'Try a guided example', demoTitle: 'Guided examples',
     startDemo: 'Explore example', next: 'Next step', finish: 'Show result', close: 'Close',
     theme: 'What interests you?', themeClimate: 'Climate', themeWater: 'Water',
     themePlants: 'Vegetation', themeAir: 'Air quality', where: 'Where should we look?',
     source: 'NASA GISS GISTEMP v4', unit: 'K / year', mapTitle: 'Global trend discovery map',
-    mapHelp: 'Pink/red cells show positive warming trends; blue shows cooling. Dots mark cells that did not pass the map significance threshold. Click a cell to inspect its series.',
+    mapHelp: 'Red cells show positive trends and blue shows negative trends. Dots mark cells that did not pass the map significance threshold. Click a cell to inspect its series.',
     noData: 'Processed GISTEMP is not available. Run `make preprocess` to generate it.',
     testConflict: 'The basic and autocorrelation-adjusted tests differ. Check the p-values and confidence interval before drawing a conclusion.',
     disclaimer: 'A significant trend describes statistical evidence of change; it does not identify its cause.',
@@ -53,7 +53,7 @@ const copy = {
     mapWindow: 'Map window',
     blankMap: 'Trend layer unavailable', point: 'Point', region: 'Region',
     dataFrequency: 'Monthly · 2° grid', fieldHelp: 'Choose an example area or drag over the map.',
-    slopeLayer: 'OLS slope · K/year', nonsignificantLayer: 'dots = not significant', observations: 'months',
+    slopeLayer: 'OLS slope', nonsignificantLayer: 'dots = not significant', observations: 'months',
   },
   fr: {
     explore: 'Explorer', methods: 'Méthodes et validation', about: 'À propos', lang: 'English',
@@ -71,13 +71,13 @@ const copy = {
     significant: 'Significative', notSignificant: 'Pas (encore) significative', insufficient: 'Données insuffisantes',
     longerPeriod: 'Une période plus longue pourrait changer ce résultat de significativité.',
     ols: 'Test t MCO', mk: 'Mann–Kendall', hr: 'Hamed–Rao',
-    raw: 'Anomalie mensuelle', deseasoned: 'Désaisonnalisée', trend: 'Tendance linéaire',
+    raw: 'Valeurs mensuelles', deseasoned: 'Désaisonnalisée', trend: 'Tendance linéaire',
     guided: 'Parcours guidé', demo: 'Voir un exemple guidé', demoTitle: 'Exemples guidés',
     startDemo: 'Explorer cet exemple', next: 'Étape suivante', finish: 'Voir le résultat', close: 'Fermer',
     theme: 'Quel thème vous intéresse ?', themeClimate: 'Climat', themeWater: 'Eau',
     themePlants: 'Végétation', themeAir: 'Qualité de l’air', where: 'Où regarder ?',
     source: 'NASA GISS GISTEMP v4', unit: 'K / an', mapTitle: 'Carte mondiale des tendances',
-    mapHelp: 'Le rose/rouge indique une tendance au réchauffement ; le bleu, un refroidissement. Les points marquent les mailles qui ne passent pas le seuil statistique. Cliquez sur une maille pour voir sa série.',
+    mapHelp: 'Le rouge indique une tendance positive et le bleu une tendance négative. Les points marquent les mailles qui ne passent pas le seuil statistique. Cliquez sur une maille pour voir sa série.',
     noData: 'GISTEMP prétraité est indisponible. Lancez `make preprocess` pour le générer.',
     testConflict: 'Les tests simple et corrigé de l’autocorrélation diffèrent. Comparez les valeurs p et l’intervalle avant toute conclusion.',
     disclaimer: 'Une tendance significative indique une preuve statistique de changement, pas sa cause.',
@@ -92,7 +92,7 @@ const copy = {
     mapWindow: 'Période de la carte',
     blankMap: 'Carte de tendance indisponible', point: 'Point', region: 'Région',
     dataFrequency: 'Mensuel · grille de 2°', fieldHelp: 'Choisissez une zone ou tracez-la sur la carte.',
-    slopeLayer: 'Pente MCO · K/an', nonsignificantLayer: 'points = non significatif', observations: 'mois',
+    slopeLayer: 'Pente MCO', nonsignificantLayer: 'points = non significatif', observations: 'mois',
   },
 } as const
 
@@ -106,6 +106,7 @@ const variables = ref<VariableInfo[]>([])
 const catalogVariables = ref<VariableInfo[]>([])
 const selectedVariable = ref('gistemp_tas_anom')
 const activeVariable = computed(() => catalogVariables.value.find((item) => item.id === selectedVariable.value) ?? variables.value[0])
+const isAnalysisReady = computed(() => activeVariable.value?.status === 'analysis_ready')
 const regions = ref<RegionInfo[]>([])
 const regionId = ref('amazon')
 const selectedBounds = ref<[number, number, number, number]>([-75, -15, -45, 5])
@@ -168,6 +169,11 @@ function periodBounds(bounds: [number, number, number, number]) {
 }
 
 async function loadMap() {
+  if (!isAnalysisReady.value) {
+    mapLayer.value = null
+    mapLoading.value = false
+    return
+  }
   mapLoading.value = true
   try {
     mapLayer.value = await api.map(selectedVariable.value, mapWindow.value)
@@ -179,6 +185,10 @@ async function loadMap() {
 }
 
 async function runAnalysis() {
+  if (!isAnalysisReady.value) {
+    analysis.value = null
+    return
+  }
   loading.value = true
   error.value = ''
   try {
@@ -200,6 +210,7 @@ async function runAnalysis() {
 }
 
 async function inspectPoint(lat: number, lon: number) {
+  if (!isAnalysisReady.value) return
   loading.value = true
   error.value = ''
   selectedPoint.value = { lat, lon }
@@ -244,6 +255,7 @@ async function wizardNext() {
   }
   showWizard.value = false
   const suggestions = await api.suggest(wizardTheme.value, wizardPlace.value)
+  if (suggestions[0]?.variable) selectedVariable.value = suggestions[0].variable
   if (!suggestions[0]?.available) {
     error.value = suggestions[0]?.message ?? ''
     return
@@ -253,6 +265,7 @@ async function wizardNext() {
 }
 
 async function startDemo(id: string) {
+  selectedVariable.value = 'gistemp_tas_anom'
   activeDemo.value = id
   demoStep.value = 1
   showDemos.value = false
@@ -289,8 +302,15 @@ watch(period, () => {
 watch(mapWindow, () => void loadMap())
 watch(selectedVariable, () => {
   selectedPoint.value = null
-  void loadMap()
-  void runAnalysis()
+  mapWindow.value = 'full'
+  if (isAnalysisReady.value) {
+    void loadMap()
+    void runAnalysis()
+  } else {
+    mapLayer.value = null
+    analysis.value = null
+    error.value = ''
+  }
 })
 watch(locale, () => {
   if (regionId.value) {
@@ -341,7 +361,7 @@ onMounted(async () => {
             <span class="step-label">01 · {{ t.variable }}</span>
             <label class="field-label" for="variable-select">{{ t.variable }}</label>
             <select id="variable-select" v-model="selectedVariable">
-              <option v-for="item in catalogVariables" :key="item.id" :value="item.id" :disabled="item.status !== 'analysis_ready'">
+              <option v-for="item in catalogVariables" :key="item.id" :value="item.id">
                 {{ locale === 'fr' ? item.name_fr : item.name }}{{ item.status !== 'analysis_ready' ? ` · ${item.short_name ?? item.status}` : '' }}
               </option>
             </select>
@@ -377,14 +397,14 @@ onMounted(async () => {
               <button :class="{ selected: period === '2010-fin' }" @click="period = '2010-fin'">{{ t.since2010 }}</button>
               <button :class="{ selected: period === '2015-fin' }" @click="period = '2015-fin'">{{ t.since2015 }}</button>
             </div>
-            <button class="button primary full-button" :disabled="loading" @click="runAnalysis">{{ loading ? t.loading : t.apply }}</button>
+            <button class="button primary full-button" :disabled="loading || !isAnalysisReady" @click="runAnalysis">{{ loading ? t.loading : t.apply }}</button>
           </section>
 
           <section v-if="analysis" class="result-card">
             <div class="result-heading"><span class="step-label">{{ t.summary }}</span><span class="verdict" :class="analysis.significant ? 'good' : 'caution'" :title="t.significanceHelp" :aria-label="t.significanceHelp">{{ analysis.significant ? '✓' : '◷' }} {{ statusText }}</span></div>
-            <div class="rate-value">{{ formatRate(analysis.trend.slope_ols, analysis.unit) }}</div>
+            <div class="rate-value">{{ formatRate(analysis.trend.slope_ols, analysis.rate_unit) }}</div>
             <div class="rate-label">{{ t.rate }} <span class="info" :title="t.m1">ⓘ</span></div>
-            <div class="confidence-row"><span>{{ t.confidence }} <span class="info" :title="t.confidenceHelp" :aria-label="t.confidenceHelp">ⓘ</span></span><strong>{{ formatRate(analysis.trend.slope_ols_lo, analysis.unit) }} – {{ formatRate(analysis.trend.slope_ols_hi, analysis.unit) }}</strong></div>
+            <div class="confidence-row"><span>{{ t.confidence }} <span class="info" :title="t.confidenceHelp" :aria-label="t.confidenceHelp">ⓘ</span></span><strong>{{ formatRate(analysis.trend.slope_ols_lo, analysis.rate_unit) }} – {{ formatRate(analysis.trend.slope_ols_hi, analysis.rate_unit) }}</strong></div>
             <div class="test-grid">
               <div :title="`${t.pValueHelp} ${t.m1}`"><span>{{ t.ols }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_ols) }}</strong></div>
               <div :title="`${t.pValueHelp} ${t.m2}`"><span>{{ t.mk }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_mk) }}</strong></div>
@@ -395,16 +415,16 @@ onMounted(async () => {
           </section>
           <div v-if="error" class="error-message" role="alert">{{ error }} <button class="text-button" @click="error = ''">×</button></div>
         </div>
-        <footer class="panel-footer"><span class="source-dot"></span>{{ activeVariable?.source }}</footer>
+        <footer class="panel-footer"><span class="source-dot"></span>{{ activeVariable?.source }} <a v-if="activeVariable?.doi" :href="`https://doi.org/${activeVariable.doi}`" target="_blank" rel="noreferrer">DOI ↗</a></footer>
       </aside>
 
       <section class="map-workspace" aria-label="Trend map and time series">
         <div class="map-heading">
           <div><span class="eyebrow">{{ t.mapTitle }}</span><p>{{ t.mapHelp }}</p></div>
-          <label class="map-period"><span>{{ t.mapWindow }}</span><select v-model="mapWindow"><option value="full">{{ t.full }}</option><option value="2010-fin">{{ t.since2010 }}</option><option value="2015-fin">{{ t.since2015 }}</option></select></label>
+          <label class="map-period"><span>{{ t.mapWindow }}</span><select v-model="mapWindow"><option v-for="window in activeVariable?.windows ?? ['full']" :key="window" :value="window">{{ window === 'full' ? t.full : window === '2010-fin' ? t.since2010 : t.since2015 }}</option></select></label>
         </div>
         <div ref="mapElement" class="map-canvas" :aria-label="t.mapTitle"></div>
-        <div class="map-overlay-label"><span class="overlay-swatch"></span>{{ t.slopeLayer }} <span class="subtle-separator">|</span> {{ t.nonsignificantLayer }}</div>
+        <div class="map-overlay-label"><span class="overlay-swatch"></span>{{ t.slopeLayer }} · {{ mapLayer?.slope_unit }} <span class="subtle-separator">|</span> {{ t.nonsignificantLayer }}</div>
         <div class="map-legend" aria-label="Diverging trend palette legend"><span>{{ mapLayer?.scale_min.toFixed(3) ?? '−' }}</span><div class="legend-gradient"></div><span>0</span><span class="legend-gradient reverse"></span><span>+{{ Math.abs(mapLayer?.scale_max ?? 0).toFixed(3) }}</span><small>{{ mapLayer?.slope_unit }}</small></div>
         <div v-if="mapLoading" class="map-loading">{{ t.loadingMap }}</div>
         <div class="map-attribution">Basemap: NASA GIBS Blue Marble. Trend overlay: {{ activeVariable?.source }}.</div>
@@ -423,7 +443,7 @@ onMounted(async () => {
     <main v-else-if="page === 'methods'" class="content-page">
       <div class="content-heading"><span class="eyebrow">SCIENTIFIC TRANSPARENCY</span><h1>{{ t.methods }}</h1><p>{{ t.methodsIntro }}</p></div>
       <div class="method-grid">
-        <article><span class="method-index">01</span><h2>{{ t.ols }}</h2><p>{{ t.m1 }}</p><span class="method-formula">y = a + bt · b in K/year · 95% CI</span></article>
+        <article><span class="method-index">01</span><h2>{{ t.ols }}</h2><p>{{ t.m1 }}</p><span class="method-formula">y = a + bt · rate unit follows variable · 95% CI</span></article>
         <article><span class="method-index">02</span><h2>{{ t.mk }} + Sen</h2><p>{{ t.m2 }}</p><span class="method-formula">Median of pairwise slopes</span></article>
         <article><span class="method-index">03</span><h2>{{ t.hr }} + FDR</h2><p>{{ t.m3 }}</p><span class="method-formula">BH false discovery rate · α = 0.10</span></article>
       </div>

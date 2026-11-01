@@ -41,5 +41,11 @@ def test_catalog_distinguishes_ready_sample_and_access_blocked_products() -> Non
     products = {item["id"]: item for item in response.json()}
     assert products["gistemp_tas_anom"]["status"] == "analysis_ready"
     assert products["modis_ndvi"]["short_name"] == "MOD13C2"
-    assert products["modis_ndvi"]["status"] in {"sample_downloaded", "acquiring"}
-    assert products["merra2_precipitation"]["status"] == "blocked_eula"
+    assert products["modis_ndvi"]["status"] in {
+        "sample_downloaded",
+        "acquiring",
+        "series_processed",
+        "analysis_ready",
+    }
+    assert products["modis_ndvi"]["doi"] == "10.5067/MODIS/MOD13C2.061"
+    assert products["merra2_flux"]["status"] == "blocked_eula"

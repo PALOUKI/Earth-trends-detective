@@ -398,7 +398,12 @@ def _parallel_grid_metrics(values: np.ndarray, t_critical: np.ndarray) -> np.nda
     return output.reshape((lat_count, lon_count, len(_METRICS)))
 
 
-def analyze_grid_numba(data: xr.DataArray, alpha_fdr: float = 0.10) -> xr.Dataset:
+def analyze_grid_numba(
+    data: xr.DataArray,
+    alpha_fdr: float = 0.10,
+    slope_unit: str = "K/year",
+    source: str = "NASA GISS GISTEMP v4",
+) -> xr.Dataset:
     """Compute Base and Hamed-Rao statistics for every map cell in parallel."""
     if set(data.dims) != {"time", "lat", "lon"}:
         raise ValueError("Input must have exactly time, lat, and lon dimensions")
@@ -446,19 +451,21 @@ def analyze_grid_numba(data: xr.DataArray, alpha_fdr: float = 0.10) -> xr.Datase
     )
     units = {
         "n_valid": "months",
-        "slope_ols": "K/year",
-        "slope_ols_lo": "K/year",
-        "slope_ols_hi": "K/year",
+        "slope_ols": slope_unit,
+        "slope_ols_lo": slope_unit,
+        "slope_ols_hi": slope_unit,
         "p_ols": "1",
-        "slope": "K/year",
-        "slope_lo": "K/year",
-        "slope_hi": "K/year",
+        "slope": slope_unit,
+        "slope_lo": slope_unit,
+        "slope_hi": slope_unit,
         "p_mk": "1",
         "p_value": "1",
         "significant_fdr": "1",
-        "sign_class": "-1 cooling, 0 not FDR-significant, 1 warming",
+        "sign_class": "-1 significant negative, 0 not FDR-significant, 1 significant positive",
     }
     for metric, unit in units.items():
         result[metric].attrs["units"] = unit
-        result[metric].attrs["source"] = "NASA GISS GISTEMP v4"
+        result[metric].attrs["source"] = source
+    result.attrs["slope_unit"] = slope_unit
+    result.attrs["source"] = source
     return result

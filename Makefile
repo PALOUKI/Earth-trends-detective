@@ -1,21 +1,22 @@
 .PHONY: setup ingest preprocess trends tiles test lint dev web-dev build deploy
 
 TRENDS_FLAGS ?=
+VARIABLE ?= gistemp_tas_anom
 
 setup:
 	uv sync --all-groups
 
 ingest:
-	uv run python -m pipeline.cli ingest gistemp_tas_anom
+	uv run python -m pipeline.cli ingest $(VARIABLE)
 
 preprocess:
-	uv run python -m pipeline.cli preprocess gistemp_tas_anom
+	uv run python -m pipeline.cli preprocess $(VARIABLE)
 
 trends:
-	uv run python -m pipeline.cli trends gistemp_tas_anom $(TRENDS_FLAGS)
+	uv run python -m pipeline.cli trends $(VARIABLE) $(TRENDS_FLAGS)
 
 tiles:
-	uv run python -m pipeline.cli tiles gistemp_tas_anom
+	uv run python -m pipeline.cli tiles $(VARIABLE)
 
 test:
 	uv run pytest

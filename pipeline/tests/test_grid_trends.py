@@ -33,6 +33,12 @@ def test_grid_analysis_is_dask_parallelized_and_applies_fdr() -> None:
     assert np.isfinite(result.p_mk.sel(lat=-1, lon=10))
     assert np.isfinite(result.p_value.sel(lat=-1, lon=10))
 
+    vegetation = analyze_grid(
+        data, slope_unit="index/year", source="NASA MODIS test product"
+    )
+    assert vegetation.slope_ols.attrs["units"] == "index/year"
+    assert vegetation.slope.attrs["source"] == "NASA MODIS test product"
+
 
 def test_numba_grid_matches_reference_methods_for_1000_seeded_pixels() -> None:
     rng = np.random.default_rng(2031)
@@ -135,4 +141,5 @@ def test_grid_metrics_write_to_cog_with_named_bands(tmp_path) -> None:
         assert source.crs.to_epsg() == 4326
         assert source.count == 12
         assert source.descriptions[0] == "slope_ols"
+        assert source.tags(1)["units"] == "K/year"
         assert source.tags(ns="IMAGE_STRUCTURE")["LAYOUT"] == "COG"

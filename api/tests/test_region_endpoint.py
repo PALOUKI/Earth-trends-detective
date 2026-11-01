@@ -97,3 +97,34 @@ def test_unprocessed_verified_variable_is_reported_as_temporarily_unavailable(
 
     response = asyncio.run(send_request())
     assert response.status_code == 503
+
+
+def test_modis_variable_uses_its_own_field_source_and_units(tmp_path, monkeypatch) -> None:
+    time = pd.date_range("2000-01-01", periods=120, freq="MS")
+    values = (0.002 * np.arange(120) / 12)[:, None, None] * np.ones((120, 2, 2))
+    dataset = xr.Dataset(
+        {"ndvi_index": (("time", "lat", "lon"), values)},
+        coords={"time": time, "lat": [-1.0, 1.0], "lon": [-1.0, 1.0]},
+    )
+    path = tmp_path / "modis_ndvi.zarr"
+    dataset.to_zarr(path, zarr_format=2)
+    monkeypatch.setitem(main.VARIABLE_CONFIG["modis_ndvi"], "path", path)
+
+    async def send_request():
+        async with AsyncClient(
+            transport=ASGITransport(app=main.app), base_url="http://test"
+        ) as client:
+            return await client.post(
+                "/api/region",
+                json={
+                    "variable": "modis_ndvi",
+                    "bounds": [-2, -2, 2, 2],
+                    "label": "Synthetic test area",
+                },
+            )
+
+    response = asyncio.run(send_request())
+    assert response.status_code == 200
+    assert response.json()["variable"] == "modis_ndvi"
+    assert response.json()["unit"] == "1"
+    assert "MODIS normalized difference vegetation index (NDVI)" in response.json()["summary"]["en"]

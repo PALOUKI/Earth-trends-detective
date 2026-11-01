@@ -6,6 +6,8 @@ VARIABLE_CONFIG = {
     "gistemp_tas_anom": {
         "path": Path("data/processed/gistemp_tas_anom.zarr"),
         "field": "temperature_anomaly",
+        "name": "Surface temperature anomaly",
+        "name_fr": "L’anomalie de température de surface",
         "source": "NASA GISS GISTEMP v4",
         "unit": "K",
         "rate_unit": "K/year",
@@ -14,17 +16,21 @@ VARIABLE_CONFIG = {
     "modis_ndvi": {
         "path": Path("data/processed/modis_ndvi.zarr"),
         "field": "ndvi_index",
+        "name": "MODIS normalized difference vegetation index (NDVI)",
+        "name_fr": "L’indice de végétation normalisé MODIS (NDVI)",
         "source": "NASA Terra MODIS MOD13C2 v061, NDVI",
         "unit": "1",
         "rate_unit": "index/year",
-        "windows": ("full", "2010-fin", "2015-fin"),
+        "windows": ("full",),
     },
     "modis_evi": {
         "path": Path("data/processed/modis_evi.zarr"),
         "field": "evi_index",
+        "name": "MODIS enhanced vegetation index (EVI)",
+        "name_fr": "L’indice de végétation amélioré MODIS (EVI)",
         "source": "NASA Terra MODIS MOD13C2 v061, EVI",
         "unit": "1",
         "rate_unit": "index/year",
-        "windows": ("full", "2010-fin", "2015-fin"),
+        "windows": ("full",),
     },
 }

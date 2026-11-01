@@ -14,10 +14,10 @@ Updated: 2026-11-01
 - [x] Requête CMR réelle : MOD13C2 v061 trouvé et un granule mondial de janvier 2024 téléchargé (94 485 525 octets). Le fichier révèle NDVI/EVI mensuels à 0,05°, facteur d'échelle 1/10000 et variable de qualité pixel.
 - [x] Dépendance HDF4 `pyhdf==0.11.6` ajoutée ; adaptateur MOD13C2 NDVI/EVI écrit pour masquer les pixels Fill et rangs qualité >1, agréger en grille 2° et produire Zarr.
 - [x] Tests unitaires de conversion/masquage/agrégation MODIS : 2 passés.
-- [x] CMR interrogé en direct : 319 granules mensuels de février 2000 à août 2026. Téléchargement autorisé et lancé ; l'acquisition est toujours en cours.
-- [x] Pipeline tendances/tuiles, extraction régionale, sérialisation API et sélecteur d'interface généralisés pour les identifiants de variables ; les options MODIS restent désactivées jusqu'à la fin des tendances et des cartes.
-- [ ] L'adaptateur exige au moins 120 mois consécutifs ; tant que les 319 granules ne sont pas téléchargés, prétraités et cartographiés, NDVI/EVI ne sont pas encore proposés comme variables analysables.
-- [ ] Les requêtes GET réelles de MERRA-2, GLDAS, GPM, AIRS et OMI échouent avec `EULA Acceptance Failure` malgré l'authentification Earthdata. URL d'autorisation GES DISC transmise à l'utilisateur ; en attente d'acceptation avant nouvelle vérification.
+- [x] CMR interrogé en direct : 319 granules mensuels de février 2000 à août 2026. Le téléchargeur reprend les transferts interrompus avec requêtes Range, vérifie la taille/HDF4 et ne promeut que les granules lisibles. 148 granules validés en local ; une fenêtre de 139 mois consécutifs (2000-02–2011-08) a été traitée.
+- [x] Pipeline tendances/tuiles, extraction régionale, sérialisation API et sélecteur d'interface généralisés aux identifiants de variables. NDVI et EVI sont maintenant des analyses prêtes avec leurs séries, statistiques de tendance, COG et cartes XYZ calculés.
+- [x] L'adaptateur exige au moins 120 mois consécutifs et l'analyse des indices MODIS enlève la climatologie mensuelle par cellule. Les tendances et cartes NDVI/EVI ont été générées sur la fenêtre complète disponible ; les fenêtres 2010-fin et 2015-fin sont exclues car elles n'ont pas 120 mois.
+- [ ] Les requêtes GET réelles de MERRA-2, GLDAS, GPM, AIRS et OMI échouent avec `EULA Acceptance Failure` malgré l'authentification Earthdata. URL d'autorisation GES DISC transmise à l'utilisateur ; en attente d'acceptation avant nouvelle vérification. Les champs et unités restent explicitement à confirmer au niveau des fichiers.
 
 ## Decisions and blockers
 
@@ -74,7 +74,7 @@ Updated: 2026-11-01
 - [x] `/api/trend` includes map-wide valid/significant/non-significant cell counts when its processed Zarr is present.
 - [x] Deterministic summaries are provided in English and French; OpenAPI docs are available at `/docs`.
 - [x] Async HTTP contract tests cover the catalog, health, map layers, regional analysis, and clicked point response.
-- [x] L'API expose un catalogue vérifié avec états `analysis_ready`, `sample_downloaded`, `acquiring` et `blocked_eula` ; les routes de série, point, tendance, tuiles et export sélectionnent leur stockage via l'identifiant variable.
+- [x] L'API expose un catalogue vérifié avec états `analysis_ready`, `sample_downloaded`, `acquiring`, `series_processed` et `blocked_eula` ; les routes de série, point, tendance, tuiles et export sélectionnent leur stockage via l'identifiant variable. Les résumés et unités dépendent de la variable et citent son DOI dans l'interface.
 - [x] Tests use `httpx` ASGI calls and synthetic fixture datasets; all API endpoint tests pass.
 - [x] Warm GISTEMP point endpoint measured at 206–223 ms locally after an initial 575 ms cold call; the brief's <300 ms target is met after data/cache warm-up.
 - [x] CORS defaults to the local frontend origin and is configurable by `ALLOWED_ORIGINS` for deployment.
@@ -102,7 +102,7 @@ Updated: 2026-11-01
 ## M8 preparation and required access
 
 - [x] Added API and web Dockerfiles, Compose topology, Caddy HTTPS routing, persistent certificate storage, restart policies, and read-only processed-data mounts. `docker compose config` succeeds.
-- [x] `make deploy` now invokes `deploy/deploy.sh`, which sends source and only processed GISTEMP Zarr/COG/XYZ outputs over SSH/rsync, builds Compose remotely, and checks the HTTPS health endpoint.
+- [x] `make deploy` invokes `deploy/deploy.sh`, which sends only processed Zarr/COG/XYZ products for all selected variables over SSH/rsync, builds Compose remotely, and checks the HTTPS health endpoint.
 - [ ] Remote execution remains blocked until the host, SSH user/key access, public DNS domain, and inbound 80/443 status are supplied. Deployed GISTEMP data do not require Earthdata credentials.
 
 ## M0 acceptance summary
@@ -116,5 +116,5 @@ Updated: 2026-11-01
 - M2, M3, M4, M5, and M6 are partial; do not describe them as accepted until the unchecked requirements above pass.
 - Milestone branches exist for M2, M4, M5, and M6; only the M0/M1 baseline is on `main`. Do not merge incomplete milestones.
 - M8 has not started: the brief requires a public host, domain, deployment access, open ports 80/443, and an HTTPS end-to-end check. No alternative host has been selected.
-- Keep GISTEMP as the only *analysis-ready* variable until another real multi-year series passes ingestion, trend generation, API/UI integration, and tests. Do not wait for M8 to develop it.
+- GISTEMP, MODIS NDVI, and MODIS EVI pass local data/trend/tile generation. Water and air products remain blocked by GES DISC EULA acceptance; a third independent Earth-system domain is required by the challenge and is not ready yet.
 - Do not start or extend M7 before M8. The comparison and Rigorous result controls are not shown in the MVP frontend.

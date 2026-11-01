@@ -46,6 +46,7 @@ CATALOG = [
     {
         **VARIABLE,
         "source": "NASA GISS GISTEMP v4",
+        "doi": "10.1029/2023JD040179",
         "short_name": None,
         "status": "analysis_ready",
         "status_detail": "Source, regional analysis, and trend map are available.",
@@ -62,8 +63,9 @@ CATALOG = [
             "Vegetation-index proxy; cloud, snow, viewing conditions and land cover "
             "affect retrievals."
         ),
-        "windows": ["full", "2010-fin", "2015-fin"],
+        "windows": ["full"],
         "source": "NASA Terra MODIS MOD13C2 v061",
+        "doi": "10.5067/MODIS/MOD13C2.061",
         "short_name": "MOD13C2",
         "status": "sample_downloaded",
         "status_detail": (
@@ -83,8 +85,9 @@ CATALOG = [
             "Vegetation-index proxy; cloud, snow, viewing conditions and land cover "
             "affect retrievals."
         ),
-        "windows": ["full", "2010-fin", "2015-fin"],
+        "windows": ["full"],
         "source": "NASA Terra MODIS MOD13C2 v061",
+        "doi": "10.5067/MODIS/MOD13C2.061",
         "short_name": "MOD13C2",
         "status": "sample_downloaded",
         "status_detail": (
@@ -93,29 +96,42 @@ CATALOG = [
         ),
     },
     {
-        "id": "merra2_precipitation",
-        "name": "MERRA-2 monthly precipitation",
-        "name_fr": "Précipitations mensuelles MERRA-2",
-        "unit": "kg m⁻² s⁻¹",
-        "definition": "Monthly precipitation from the NASA MERRA-2 reanalysis.",
-        "definition_fr": "Précipitations mensuelles issues de la réanalyse NASA MERRA-2.",
+        "id": "merra2_flux",
+        "name": "MERRA-2 monthly flux diagnostics",
+        "name_fr": "Diagnostics mensuels de flux MERRA-2",
+        "unit": "Pending file-level metadata",
+        "definition": (
+            "NASA MERRA-2 monthly surface-flux product; selected field and units "
+            "await file inspection."
+        ),
+        "definition_fr": (
+            "Produit NASA MERRA-2 mensuel de flux de surface ; variable et unités "
+            "à confirmer sur le fichier."
+        ),
         "period": "1980 onward",
         "limitations": "Model reanalysis, not a direct satellite measurement.",
         "source": "NASA GMAO MERRA-2 v5.12.4",
+        "doi": "10.5067/0JRLVL8YV2Y4",
         "short_name": "M2TMNXFLX",
         "status": "blocked_eula",
         "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
     },
     {
-        "id": "gldas_soil_moisture",
-        "name": "GLDAS Noah soil moisture",
-        "name_fr": "Humidité du sol GLDAS Noah",
-        "unit": "kg m⁻²",
-        "definition": "Monthly soil moisture from the NASA GLDAS Noah land model.",
-        "definition_fr": "Humidité mensuelle du sol issue du modèle terrestre NASA GLDAS Noah.",
+        "id": "gldas_noah_monthly",
+        "name": "GLDAS Noah monthly land-surface fields",
+        "name_fr": "Variables mensuelles de surface terrestre GLDAS Noah",
+        "unit": "Pending file-level metadata",
+        "definition": (
+            "Monthly land-surface model output; selected field and units await file inspection."
+        ),
+        "definition_fr": (
+            "Sortie mensuelle d'un modèle terrestre ; variable et unités à confirmer "
+            "sur le fichier."
+        ),
         "period": "2000 onward",
         "limitations": "Land-surface model output; not a direct satellite measurement.",
         "source": "NASA GLDAS Noah v2.1",
+        "doi": "10.5067/SXAVCZFAQLNO",
         "short_name": "GLDAS_NOAH025_M",
         "status": "blocked_eula",
         "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
@@ -132,7 +148,47 @@ CATALOG = [
             "Satellite precipitation estimates; uncertainty varies by surface and regime."
         ),
         "source": "NASA GPM IMERG v07",
+        "doi": "10.5067/GPM/IMERG/3B-MONTH/07",
         "short_name": "GPM_3IMERGM",
+        "status": "blocked_eula",
+        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+    },
+    {
+        "id": "airs_monthly_support",
+        "name": "AIRS monthly support product",
+        "name_fr": "Produit mensuel de support AIRS",
+        "unit": "Pending file-level metadata",
+        "definition": (
+            "NASA AIRS/Aqua monthly support collection; selected field and units "
+            "await file inspection."
+        ),
+        "definition_fr": (
+            "Collection mensuelle NASA AIRS/Aqua ; variable et unités à confirmer sur le fichier."
+        ),
+        "period": "2002 onward",
+        "limitations": "Satellite retrieval; cloud clearing, coverage, and retrieval quality vary.",
+        "source": "NASA AIRS/Aqua Support product v7.0",
+        "doi": "10.5067/UBENJB9D3T2H",
+        "short_name": "AIRS3STM",
+        "status": "blocked_eula",
+        "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
+    },
+    {
+        "id": "omi_no2",
+        "name": "OMI tropospheric nitrogen dioxide",
+        "name_fr": "Dioxyde d'azote troposphérique OMI",
+        "unit": "Pending file-level metadata",
+        "definition": "NASA OMI daily tropospheric NO₂ product; field units await file inspection.",
+        "definition_fr": (
+            "Produit quotidien NASA OMI de NO₂ troposphérique ; unités à confirmer sur le fichier."
+        ),
+        "period": "2004 onward",
+        "limitations": (
+            "Satellite retrieval; cloud screening and row-anomaly flags affect spatial coverage."
+        ),
+        "source": "NASA Aura OMI Daily Level-3 v004",
+        "doi": "10.5067/AURA/OMI/DATA3407",
+        "short_name": "OMNO2d",
         "status": "blocked_eula",
         "status_detail": "NASA GES DISC data request requires application EULA acceptance.",
     },
@@ -221,6 +277,7 @@ def _format_result(
     result["label"] = label
     result["source"] = source
     result["unit"] = config["unit"]
+    result["rate_unit"] = config["rate_unit"]
     result["summary"] = make_summary(
         label,
         trend["slope_ols"],
@@ -230,6 +287,8 @@ def _format_result(
         trend["p_mk"],
         config["rate_unit"],
         result.get("break"),
+        str(config["name"]),
+        str(config["name_fr"]),
     )
     if time_values:
         result["period"] = {"start": time_values[0], "end": time_values[-1]}
@@ -284,10 +343,16 @@ async def catalog() -> list[dict[str, object]]:
             if raw_count > 1:
                 item["status"] = "acquiring"
                 item["status_detail"] = (
-                    f"{raw_count} of 319 monthly granules downloaded; "
+                    f"{raw_count} candidate monthly granule files are present; validating, "
                     "preprocessing and trend products pending."
                 )
         if config and _dataset_path(str(item["id"])).exists():
+            with xr.open_zarr(_dataset_path(str(item["id"]))) as dataset:
+                times = dataset.time.values
+                if times.size:
+                    first = np.datetime_as_string(times[0], unit="M")
+                    last = np.datetime_as_string(times[-1], unit="M")
+                    item["period"] = f"{first} to {last}; monthly"
             tile_meta = Path("data/tiles") / item["id"] / "full" / "palette.json"
             trend_data = Path("data/processed") / item["id"] / "trend_full.zarr"
             if tile_meta.is_file() and trend_data.exists():
@@ -327,19 +392,31 @@ async def suggest(theme: str = "climate", place: str = "") -> list[Suggestion]:
                 region_id=region_match.id if region_match else None,
             )
         ]
-    if theme.lower() in {"vegetation", "plants", "forest"}:
-        ndvi = next(item for item in await catalog() if item["id"] == "modis_ndvi")
-        ready = ndvi["status"] == "analysis_ready"
+    catalog_by_theme = {
+        "vegetation": "modis_ndvi",
+        "plants": "modis_ndvi",
+        "forest": "modis_ndvi",
+        "water": "gpm_precipitation",
+        "rainfall": "gpm_precipitation",
+        "soil": "gldas_noah_monthly",
+        "air": "omi_no2",
+        "atmosphere": "airs_monthly_support",
+        "air quality": "omi_no2",
+    }
+    candidate_id = catalog_by_theme.get(theme.lower())
+    if candidate_id:
+        candidate = next(item for item in await catalog() if item["id"] == candidate_id)
+        ready = candidate["status"] == "analysis_ready"
         return [
             Suggestion(
-                variable="modis_ndvi",
-                name=str(ndvi["name"]),
-                definition=str(ndvi["definition"]),
+                variable=str(candidate["id"]),
+                name=str(candidate["name"]),
+                definition=str(candidate["definition"]),
                 available=ready,
                 message=(
-                    f"Analyze MODIS NDVI for {place or 'your selected region'}."
+                    f"Analyze {candidate['name']} for {place or 'your selected region'}."
                     if ready
-                    else str(ndvi["status_detail"])
+                    else str(candidate["status_detail"])
                 ),
                 region_id=region_match.id if region_match else None,
             )
@@ -350,9 +427,7 @@ async def suggest(theme: str = "climate", place: str = "") -> list[Suggestion]:
             name=VARIABLE["name"],
             definition=VARIABLE["definition"],
             available=False,
-            message=(
-                "This first release analyzes temperature only; other themes are not yet available."
-            ),
+            message="No verified analysis-ready dataset is cataloged for this theme yet.",
             region_id=region_match.id if region_match else None,
         )
     ]

@@ -12,7 +12,11 @@ Requires Python 3.11 or 3.12, `uv`, and (for deployment) Docker Compose.
 make setup
 make test
 make dev
+cd web && npm install
+cd web && npm run dev
 ```
+
+The API runs at `http://localhost:8000`; Vite serves the frontend at `http://localhost:5173` and proxies `/api` requests to the API. Run `make build` for a production frontend build. Direct web dependency versions are pinned. The npm lockfile is pending registry access and must be generated before a production build.
 
 See [docs/PROGRESS.md](docs/PROGRESS.md) for milestone status and known access needs.
 

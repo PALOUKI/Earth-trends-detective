@@ -1,4 +1,4 @@
-.PHONY: setup ingest preprocess trends tiles test lint dev build deploy
+.PHONY: setup ingest preprocess trends tiles test lint dev web-dev build deploy
 
 setup:
 	uv sync --all-groups
@@ -23,6 +23,9 @@ lint:
 
 dev:
 	uv run uvicorn api.app.main:app --reload --host 0.0.0.0 --port 8000
+
+web-dev:
+	cd web && npm run dev
 
 build:
 	cd web && npm run build

@@ -30,6 +30,11 @@ def main() -> None:
             from pipeline.ingest.omi_no2 import ingest as ingest_omi
 
             print(ingest_omi())
+        elif args.variable == "airs_surface_air_temp":
+            from pipeline.ingest.airs_temperature import download_airs, prepare_airs
+
+            download_airs()
+            print(prepare_airs())
         elif args.variable in {"merra2_flux", "gldas_noah_monthly"}:
             from pipeline.ingest.monthly_netcdf import (
                 download_monthly_netcdf,
@@ -58,6 +63,10 @@ def main() -> None:
             from pipeline.ingest.omi_no2 import prepare_omi
 
             print(prepare_omi())
+        elif args.variable == "airs_surface_air_temp":
+            from pipeline.ingest.airs_temperature import prepare_airs
+
+            print(prepare_airs())
         elif args.variable in {"merra2_flux", "gldas_noah_monthly"}:
             from pipeline.ingest.monthly_netcdf import prepare_monthly_netcdf
 

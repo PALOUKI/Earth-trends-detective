@@ -111,8 +111,8 @@
   doi: 10.5067/UBENJB9D3T2H
   unit: K
   frequency: monthly
-  period: 2002 onward
-  integration_status: sample_downloaded
+  period: 2002 onward; 2002-09–2012-08 monthly series being acquired
+  integration_status: access_verified_acquiring
   access:
     type: earthaccess
     short_name: AIRS3STM

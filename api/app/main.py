@@ -67,7 +67,7 @@ CATALOG = [
         "source": "NASA Terra MODIS MOD13C2 v061",
         "doi": "10.5067/MODIS/MOD13C2.061",
         "short_name": "MOD13C2",
-        "status": "sample_downloaded",
+        "status": "acquiring",
         "status_detail": (
             "One real monthly granule is decoded; at least 120 consecutive months "
             "and trend products are still required."
@@ -177,10 +177,10 @@ CATALOG = [
         "source": "NASA AIRS/Aqua L3 Standard Physical Retrieval (AIRS-only) v7.0",
         "doi": "10.5067/UBENJB9D3T2H",
         "short_name": "AIRS3STM",
-        "status": "sample_downloaded",
+        "status": "acquiring",
         "status_detail": (
-            "A real monthly sample is downloaded; SurfAirTemp_A and K are verified, but "
-            "a long time series and analysis products are not generated."
+            "SurfAirTemp_A and K are verified against the NASA V7 L3 guide; the "
+            "2002–2012 monthly series is being acquired."
         ),
     },
     {

@@ -79,4 +79,15 @@ VARIABLE_CONFIG = {
         "windows": ("full",),
         "remove_monthly_climatology": True,
     },
+    "airs_surface_air_temp": {
+        "path": Path("data/processed/airs_surface_air_temp.zarr"),
+        "field": "surface_air_temperature",
+        "name": "AIRS monthly surface air temperature",
+        "name_fr": "Température de l'air en surface mensuelle AIRS",
+        "source": "NASA AIRS/Aqua L3 Standard Physical Retrieval v7.0",
+        "unit": "K",
+        "rate_unit": "K/year",
+        "windows": ("full",),
+        "remove_monthly_climatology": True,
+    },
 }

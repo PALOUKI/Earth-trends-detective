@@ -1,0 +1,16 @@
+- id: gistemp_tas_anom
+  name: Surface temperature anomaly
+  name_fr: Anomalie de température de surface
+  source: NASA GISS GISTEMP v4, Land-Ocean Temperature Index, ERSSTv5, 1200 km smoothing
+  doi: 10.1029/2023JD040179
+  unit: K
+  frequency: monthly
+  grid: 2x2 degree
+  period: 1880-present (source updates monthly)
+  higher_is: warming
+  description: Monthly surface temperature difference from the 1951–1980 mean on a regular 2° grid.
+  description_fr: Écart mensuel de température de surface par rapport à la moyenne 1951–1980 sur une grille régulière de 2°.
+  limitations: Blended land and ocean analysis; temporal and spatial coverage vary; anomalies are not absolute temperatures.
+  access:
+    type: url
+    ref: https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz

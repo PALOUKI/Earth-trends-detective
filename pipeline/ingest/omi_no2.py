@@ -16,6 +16,7 @@ SHORT_NAME = "OMNO2d"
 VERSION = "004"
 DOI = "10.5067/AURA/OMI/DATA3407"
 FIELD = "HDFEOS/GRIDS/ColumnAmountNO2/Data Fields/ColumnAmountNO2TropCloudScreened"
+STRUCT_METADATA = "HDFEOS INFORMATION/StructMetadata.0"
 SOURCE_SHAPE = (720, 1440)  # global 0.25-degree grid from the HDF-EOS structure metadata.
 GRID_BLOCK = 8  # native grid aggregated to the regular 2-degree analysis grid.
 RAW_DIR = Path("data/raw/omi_omno2d")
@@ -23,6 +24,24 @@ OUTPUT = Path("data/processed/omi_no2.zarr")
 DEFAULT_START = "2005-01-01"
 DEFAULT_END = "2014-12-31"
 FILL_VALUE = -1.2676506e30
+
+
+def _valid_grid_metadata(source: h5py.File) -> bool:
+    """Verify the source grid dimensions, geographic bounds, and pixel registration."""
+    if STRUCT_METADATA not in source:
+        return False
+    metadata = source[STRUCT_METADATA][()]
+    if isinstance(metadata, bytes):
+        metadata = metadata.decode("ascii", errors="replace")
+    required = (
+        "XDim=1440",
+        "YDim=720",
+        "UpperLeftPointMtrs=(-180000000.000000,-90000000.000000)",
+        "LowerRightMtrs=(180000000.000000,90000000.000000)",
+        "PixelRegistration=HE5_HDFE_CENTER",
+        "Projection=HE5_GCTP_GEO",
+    )
+    return all(value in metadata for value in required)
 
 
 def _coarsen_daily_grid(raw: np.ndarray, *, block_size: int = GRID_BLOCK) -> np.ndarray:
@@ -58,6 +77,8 @@ def _read_daily(path: Path) -> tuple[pd.Timestamp, np.ndarray]:
         dataset = source[FIELD]
         if dataset.shape != SOURCE_SHAPE:
             raise ValueError(f"Unexpected OMNO2d grid shape in {path.name}: {dataset.shape}")
+        if not _valid_grid_metadata(source):
+            raise ValueError(f"Unexpected OMNO2d geographic grid metadata in {path.name}")
         units = dataset.attrs.get("Units", dataset.attrs.get("units", b""))
         if isinstance(units, bytes):
             units = units.decode("ascii", errors="replace")
@@ -80,6 +101,8 @@ def _is_complete_daily(path: Path) -> bool:
             if isinstance(units, bytes):
                 units = units.decode("ascii", errors="replace")
             if dataset.shape != SOURCE_SHAPE or units != "molec/cm2":
+                return False
+            if not _valid_grid_metadata(source):
                 return False
             dataset[:]
         return True

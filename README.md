@@ -1,6 +1,6 @@
 # Earth Trends Detective
 
-An educational, reproducible tool for investigating linear changes across NASA Earth science variables. GISTEMP, MODIS NDVI/EVI, and GPM IMERG precipitation are analysis-ready. OMI tropospheric NO₂ is being integrated from verified daily files; AIRS has a downloaded sample, while MERRA-2 and GLDAS have verified access but still need field inspection. A product is selectable for analysis only after its real time series and trend maps have been processed.
+An educational, reproducible tool for investigating linear changes across NASA Earth science variables. GISTEMP, MODIS NDVI/EVI, and GPM IMERG precipitation are analysis-ready. OMI tropospheric NO₂ is being integrated from verified daily files; MERRA-2 evaporation and GLDAS topsoil moisture are being processed from verified monthly source fields. AIRS surface air temperature has a verified sample; its long series remains to be acquired. A product is selectable for analysis only after its real time series and trend maps have been processed.
 
 **Data access:** NASA GISS publishes the selected public GISTEMP gridded NetCDF at [its data downloads page](https://data.giss.nasa.gov/gistemp/data_v4.html). Dataset attribution and access details are recorded in the application and [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md).
 

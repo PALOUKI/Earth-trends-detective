@@ -55,33 +55,33 @@
     short_name: MOD13C2
     version: "061"
 - id: merra2_flux
-  name: MERRA-2 monthly flux diagnostics
-  name_fr: Diagnostics mensuels de flux MERRA-2
+  name: MERRA-2 monthly evaporation flux
+  name_fr: Flux d'évaporation mensuel MERRA-2
   source: NASA GMAO MERRA-2 monthly single-level diagnostics, Version 5.12.4 (M2TMNXFLX)
   short_name: M2TMNXFLX
   version: 5.12.4
   doi: 10.5067/0JRLVL8YV2Y4
-  unit: pending file-level verification
+  unit: kg m-2 s-1
   frequency: monthly
   grid: 0.5 x 0.625 degree source; 2 degree analysis target
   period: 1980-present in collection metadata
-  integration_status: access_verified_field_pending
+  integration_status: access_verified_acquiring
   access:
     type: earthaccess
     short_name: M2TMNXFLX
     version: 5.12.4
 - id: gldas_noah_monthly
-  name: GLDAS Noah monthly land-surface fields
-  name_fr: Variables mensuelles de surface terrestre GLDAS Noah
+  name: GLDAS Noah monthly 0-10 cm soil moisture
+  name_fr: Humidité mensuelle du sol GLDAS Noah (0-10 cm)
   source: NASA GLDAS Noah monthly 0.25 degree, Version 2.1
   short_name: GLDAS_NOAH025_M
   version: 2.1
   doi: 10.5067/SXAVCZFAQLNO
-  unit: pending file-level verification
+  unit: kg m-2
   frequency: monthly
   grid: 0.25 degree source; 2 degree analysis target
   period: 2000-present in collection metadata
-  integration_status: access_verified_field_pending
+  integration_status: access_verified_acquiring
   access:
     type: earthaccess
     short_name: GLDAS_NOAH025_M

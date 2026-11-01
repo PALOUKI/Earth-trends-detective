@@ -97,49 +97,46 @@ CATALOG = [
     },
     {
         "id": "merra2_flux",
-        "name": "MERRA-2 monthly flux diagnostics",
-        "name_fr": "Diagnostics mensuels de flux MERRA-2",
-        "unit": "Pending file-level verification",
+        "name": "MERRA-2 monthly evaporation flux",
+        "name_fr": "Flux d'évaporation mensuel MERRA-2",
+        "unit": "kg m-2 s-1",
         "definition": (
-            "NASA MERRA-2 monthly surface-flux product; selected field and units "
-            "await file inspection."
+            "Monthly turbulent evaporation flux from the NASA MERRA-2 field EVAP."
         ),
         "definition_fr": (
-            "Produit NASA MERRA-2 mensuel de flux de surface ; variable et unités "
-            "à confirmer sur le fichier."
+            "Flux mensuel d'évaporation turbulente du champ NASA MERRA-2 EVAP."
         ),
-        "period": "1980 onward",
+        "period": "1980 onward in CMR; local 2000-01–2009-12 series pending",
         "limitations": "Model reanalysis, not a direct satellite measurement.",
         "source": "NASA GMAO MERRA-2 v5.12.4",
         "doi": "10.5067/0JRLVL8YV2Y4",
         "short_name": "M2TMNXFLX",
         "status": "acquiring",
         "status_detail": (
-            "Earthdata links return real file bytes; field metadata and analysis products "
-            "are pending."
+            "EVAP and kg m-2 s-1 were read from a real January 2024 source granule; "
+            "a long series and maps are pending."
         ),
     },
     {
         "id": "gldas_noah_monthly",
-        "name": "GLDAS Noah monthly land-surface fields",
-        "name_fr": "Variables mensuelles de surface terrestre GLDAS Noah",
-        "unit": "Pending file-level verification",
+        "name": "GLDAS Noah monthly 0-10 cm soil moisture",
+        "name_fr": "Humidité mensuelle du sol GLDAS Noah (0-10 cm)",
+        "unit": "kg m-2",
         "definition": (
-            "Monthly land-surface model output; selected field and units await file inspection."
+            "Monthly topsoil water content from GLDAS Noah field SoilMoi0_10cm_inst."
         ),
         "definition_fr": (
-            "Sortie mensuelle d'un modèle terrestre ; variable et unités à confirmer "
-            "sur le fichier."
+            "Contenu en eau du sol superficiel du champ GLDAS Noah SoilMoi0_10cm_inst."
         ),
-        "period": "2000 onward",
+        "period": "2000 onward in CMR; local 2000-01–2009-12 series pending",
         "limitations": "Land-surface model output; not a direct satellite measurement.",
         "source": "NASA GLDAS Noah v2.1",
         "doi": "10.5067/SXAVCZFAQLNO",
         "short_name": "GLDAS_NOAH025_M",
         "status": "acquiring",
         "status_detail": (
-            "Earthdata links return real file bytes; field metadata and analysis products "
-            "are pending."
+            "SoilMoi0_10cm_inst and kg m-2 were read from a real January 2024 granule; "
+            "a long series and maps are pending."
         ),
     },
     {

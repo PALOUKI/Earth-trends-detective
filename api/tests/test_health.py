@@ -51,7 +51,16 @@ def test_catalog_distinguishes_ready_sample_and_access_blocked_products() -> Non
         "analysis_ready",
     }
     assert products["modis_ndvi"]["doi"] == "10.5067/MODIS/MOD13C2.061"
-    assert products["merra2_flux"]["status"] == "acquiring"
+    assert products["merra2_flux"]["status"] in {
+        "acquiring",
+        "series_processed",
+        "analysis_ready",
+    }
+    assert products["gldas_noah_monthly"]["status"] in {
+        "acquiring",
+        "series_processed",
+        "analysis_ready",
+    }
     assert products["gpm_precipitation"]["unit"] == "mm/hr"
     assert products["gpm_precipitation"]["windows"] == ["full", "2010-fin", "2015-fin"]
     assert products["gpm_precipitation"]["status"] in {
@@ -60,4 +69,8 @@ def test_catalog_distinguishes_ready_sample_and_access_blocked_products() -> Non
         "analysis_ready",
     }
     assert products["omi_no2"]["unit"] == "molec/cm2"
-    assert products["omi_no2"]["status"] == "acquiring"
+    assert products["omi_no2"]["status"] in {
+        "acquiring",
+        "series_processed",
+        "analysis_ready",
+    }

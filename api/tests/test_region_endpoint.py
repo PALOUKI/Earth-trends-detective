@@ -128,3 +128,34 @@ def test_modis_variable_uses_its_own_field_source_and_units(tmp_path, monkeypatc
     assert response.json()["variable"] == "modis_ndvi"
     assert response.json()["unit"] == "1"
     assert "MODIS normalized difference vegetation index (NDVI)" in response.json()["summary"]["en"]
+
+
+def test_gpm_variable_uses_its_own_field_source_and_units(tmp_path, monkeypatch) -> None:
+    time = pd.date_range("2000-01-01", periods=120, freq="MS")
+    values = (0.04 * np.arange(120) / 12)[:, None, None] * np.ones((120, 2, 2))
+    dataset = xr.Dataset(
+        {"precipitation_rate": (("time", "lat", "lon"), values)},
+        coords={"time": time, "lat": [-1.0, 1.0], "lon": [-1.0, 1.0]},
+    )
+    path = tmp_path / "gpm_precipitation.zarr"
+    dataset.to_zarr(path, zarr_format=2)
+    monkeypatch.setitem(main.VARIABLE_CONFIG["gpm_precipitation"], "path", path)
+
+    async def send_request():
+        async with AsyncClient(
+            transport=ASGITransport(app=main.app), base_url="http://test"
+        ) as client:
+            return await client.post(
+                "/api/region",
+                json={
+                    "variable": "gpm_precipitation",
+                    "bounds": [-2, -2, 2, 2],
+                    "label": "Synthetic test area",
+                },
+            )
+
+    response = asyncio.run(send_request())
+    assert response.status_code == 200
+    assert response.json()["variable"] == "gpm_precipitation"
+    assert response.json()["unit"] == "mm/hr"
+    assert "GPM IMERG monthly precipitation rate" in response.json()["summary"]["en"]

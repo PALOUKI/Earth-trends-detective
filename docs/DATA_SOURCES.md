@@ -26,12 +26,12 @@
 
 ## Other CMR-verified NASA products after GES DISC authorization
 
-Live authenticated CMR searches confirmed the short names, versions, and granules for all five products. Following Earthdata application authorization, each HTTPS link returned HTTP 206 for a real 4 KiB byte-range read from an actual data file. GPM, OMI, and AIRS sample granules were downloaded; MERRA-2 and GLDAS still need a full sample download and field-level inspection.
+Live authenticated CMR searches confirmed the short names, versions, and granules for all five products. Following Earthdata application authorization, each HTTPS link returned HTTP 206 for a real 4 KiB byte-range read from an actual data file. GPM, OMI, AIRS, MERRA-2, and GLDAS real sample files were downloaded and inspected; historical series are being acquired for daily OMI and monthly MERRA-2/GLDAS.
 
 | Product | CMR short name | Version | DOI | Verified state |
 | --- | --- | --- | --- | --- |
-| MERRA-2 monthly single-level flux diagnostics | `M2TMNXFLX` | 5.12.4 | [10.5067/0JRLVL8YV2Y4](https://doi.org/10.5067/0JRLVL8YV2Y4) | Authenticated file bytes verified; inspect sample fields next |
-| GLDAS Noah monthly 0.25° | `GLDAS_NOAH025_M` | 2.1 | [10.5067/SXAVCZFAQLNO](https://doi.org/10.5067/SXAVCZFAQLNO) | Authenticated file bytes verified; inspect sample fields next |
+| MERRA-2 monthly single-level flux diagnostics | `M2TMNXFLX` | 5.12.4 | [10.5067/0JRLVL8YV2Y4](https://doi.org/10.5067/0JRLVL8YV2Y4) | January 2024 file field `EVAP`, units `kg m-2 s-1`; 2000-01–2009-12 monthly series downloading |
+| GLDAS Noah monthly 0.25° | `GLDAS_NOAH025_M` | 2.1 | [10.5067/SXAVCZFAQLNO](https://doi.org/10.5067/SXAVCZFAQLNO) | January 2024 file field `SoilMoi0_10cm_inst`, units `kg m-2`; 2000-01–2009-12 monthly series downloading |
 | GPM IMERG Final monthly | `GPM_3IMERGM` | 07 | [10.5067/GPM/IMERG/3B-MONTH/07](https://doi.org/10.5067/GPM/IMERG/3B-MONTH/07) | 309 real granules ingested; `Grid/precipitation`, mm/hr; trend grids and XYZ tiles generated for 2000-01–2025-09 |
 | AIRS/Aqua monthly standard product | `AIRS3STM` | 7.0 | [10.5067/UBENJB9D3T2H](https://doi.org/10.5067/UBENJB9D3T2H) | Sample downloaded; `SurfAirTemp_A` is surface atmospheric temperature, K, per NASA V7 L3 guide |
 | OMI daily tropospheric NO₂ | `OMNO2d` | 004 | [10.5067/AURA/OMI/DATA3407](https://doi.org/10.5067/AURA/OMI/DATA3407) | Sample decoded: `ColumnAmountNO2TropCloudScreened`, molec/cm²; daily-to-monthly aggregation pending |

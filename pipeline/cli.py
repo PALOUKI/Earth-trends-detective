@@ -30,6 +30,14 @@ def main() -> None:
             from pipeline.ingest.omi_no2 import ingest as ingest_omi
 
             print(ingest_omi())
+        elif args.variable in {"merra2_flux", "gldas_noah_monthly"}:
+            from pipeline.ingest.monthly_netcdf import (
+                download_monthly_netcdf,
+                prepare_monthly_netcdf,
+            )
+
+            download_monthly_netcdf(args.variable)
+            print(prepare_monthly_netcdf(args.variable))
         else:
             from pipeline.ingest.modis_vegetation import download_modis, prepare_modis
 
@@ -50,6 +58,10 @@ def main() -> None:
             from pipeline.ingest.omi_no2 import prepare_omi
 
             print(prepare_omi())
+        elif args.variable in {"merra2_flux", "gldas_noah_monthly"}:
+            from pipeline.ingest.monthly_netcdf import prepare_monthly_netcdf
+
+            print(prepare_monthly_netcdf(args.variable))
         else:
             from pipeline.ingest.modis_vegetation import prepare_modis
 

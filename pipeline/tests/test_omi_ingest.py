@@ -4,6 +4,13 @@ import pytest
 
 from pipeline.ingest.omi_no2 import FIELD, FILL_VALUE, _coarsen_daily_grid, _read_daily
 
+GRID_METADATA = (
+    'XDim=1440\nYDim=720\n'
+    'UpperLeftPointMtrs=(-180000000.000000,-90000000.000000)\n'
+    'LowerRightMtrs=(180000000.000000,90000000.000000)\n'
+    'PixelRegistration=HE5_HDFE_CENTER\nProjection=HE5_GCTP_GEO\n'
+)
+
 
 def test_omi_coarsening_averages_valid_cloud_screened_values():
     source = np.full((720, 1440), FILL_VALUE, dtype=np.float32)
@@ -24,6 +31,7 @@ def test_omi_reader_verifies_daily_field_units_and_date(tmp_path):
         dataset = source.create_dataset(FIELD, data=values)
         dataset.attrs["Units"] = "molec/cm2"
         dataset.attrs["_FillValue"] = FILL_VALUE
+        source.create_dataset("HDFEOS INFORMATION/StructMetadata.0", data=GRID_METADATA)
 
     day, grid = _read_daily(path)
 
@@ -37,6 +45,7 @@ def test_omi_reader_rejects_wrong_units(tmp_path):
     with h5py.File(path, "w") as source:
         dataset = source.create_dataset(FIELD, data=np.zeros((720, 1440), dtype=np.float32))
         dataset.attrs["Units"] = "molec/m2"
+        source.create_dataset("HDFEOS INFORMATION/StructMetadata.0", data=GRID_METADATA)
 
     with pytest.raises(ValueError, match="Unexpected OMNO2d units"):
         _read_daily(path)

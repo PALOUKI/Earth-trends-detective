@@ -385,7 +385,7 @@ onMounted(async () => {
         <div class="map-overlay-label"><span class="overlay-swatch"></span>{{ t.slopeLayer }} <span class="subtle-separator">|</span> {{ t.nonsignificantLayer }}</div>
         <div class="map-legend" aria-label="Diverging trend palette legend"><span>{{ mapLayer?.scale_min.toFixed(3) ?? '−' }}</span><div class="legend-gradient"></div><span>0</span><span class="legend-gradient reverse"></span><span>+{{ Math.abs(mapLayer?.scale_max ?? 0).toFixed(3) }}</span><small>K/year</small></div>
         <div v-if="mapLoading" class="map-loading">{{ t.loadingMap }}</div>
-        <div class="map-attribution">Basemap imagery: NASA GIBS (MODIS Terra, 2018-06-01). Trend data: NASA GISS GISTEMP.</div>
+        <div class="map-attribution">Basemap: NASA GIBS Blue Marble. Trend overlay: NASA GISS GISTEMP.</div>
 
         <section v-if="analysis" class="chart-panel">
           <div class="chart-header">

@@ -3,7 +3,14 @@ import json
 import numpy as np
 import xarray as xr
 
-from pipeline.tiling.render import render_trend_map
+from pipeline.tiling.render import _slope_rgba, render_trend_map
+
+
+def test_slope_render_keeps_missing_cells_transparent() -> None:
+    image = _slope_rgba(np.array([[0.1, np.nan]]), limit=0.2)
+
+    assert image[0, 0, 3] == 255
+    assert image[0, 1, 3] == 0
 
 
 def test_render_builds_xyz_slope_and_stipple_tiles(tmp_path) -> None:

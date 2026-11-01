@@ -14,6 +14,15 @@
 - **CMR short name:** None used. A live authenticated `earthaccess` CMR search for `GISTEMP` returned zero records; this data source is obtained from the NASA GISS public download page.
 - **Limitations:** This is a blended land-surface air and sea-surface temperature analysis, not absolute temperature. Coverage varies in space and time; the current endpoint can update historical values.
 
+## NASA GIBS Blue Marble basemap
+
+- **Layer:** `BlueMarble_NextGeneration`, titled “Blue Marble (MODIS)” in the live WMTS capabilities document.
+- **Publisher/service:** NASA Global Imagery Browse Services (GIBS), WMTS EPSG:3857.
+- **Tile service:** `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg`
+- **Verification:** WMTS GetCapabilities and a real tile request returned the layer and HTTP 200 on 2026-11-01.
+- **Use:** Geographic reference background only. It is not an input to the trend calculation; all analytical values and overlays are generated from GISTEMP v4.
+- **NASA documentation:** [GIBS Access Basics](https://nasa-gibs.github.io/gibs-api-docs/access-basics/) and [Blue Marble: Next Generation](https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/).
+
 ### NASA GISTEMP published global monthly series (validation reference)
 
 - **Product:** Land-Ocean Temperature Index global monthly mean anomalies.

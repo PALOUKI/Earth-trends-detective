@@ -9,15 +9,18 @@ const blankStyle = {
     gibs: {
       type: 'raster' as const,
       tiles: [
-        'https://gibs-a.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2018-06-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
-        'https://gibs-b.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2018-06-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
-        'https://gibs-c.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2018-06-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+        'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg',
       ],
       tileSize: 256,
       attribution: 'NASA Global Imagery Browse Services (GIBS)',
     },
   },
-  layers: [{ id: 'gibs', type: 'raster' as const, source: 'gibs' }],
+  layers: [{
+    id: 'gibs',
+    type: 'raster' as const,
+    source: 'gibs',
+    paint: { 'raster-saturation': -0.2, 'raster-contrast': -0.05 },
+  }],
 }
 
 export function useMap(
@@ -48,8 +51,8 @@ export function useMap(
       })
       instance.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': opacity } })
     }
-    addOrUpdateRaster('slope-overlay', layer.urls.slope, 0.72)
-    addOrUpdateRaster('significance-overlay', layer.urls.nonsignificant, 0.8)
+    addOrUpdateRaster('slope-overlay', layer.urls.slope, 0.55)
+    addOrUpdateRaster('significance-overlay', layer.urls.nonsignificant, 0.82)
   }
 
   function drawBounds(mapInstance: MapLibreMap, start: [number, number], end: [number, number]) {

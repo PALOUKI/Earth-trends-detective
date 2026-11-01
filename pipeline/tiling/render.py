@@ -38,8 +38,13 @@ def _write_xyz_tiles(
     output_dir: Path,
     *,
     max_zoom: int,
+    resampling_method: str = "nearest",
 ) -> None:
-    """Reproject a georeferenced RGBA array into 256px Web Mercator XYZ PNGs."""
+    """Reproject an RGBA array into Web Mercator XYZ PNGs.
+
+    Bilinear resampling is suitable for the continuous slope color layer. Categorical
+    stipple marks use nearest-neighbor so the individual marks remain crisp.
+    """
     height, width, _ = rgba.shape
     profile = {
         "driver": "GTiff",
@@ -79,7 +84,7 @@ def _write_xyz_tiles(
                                         y,
                                         zoom,
                                         tilesize=256,
-                                        resampling_method="nearest",
+                                        resampling_method=resampling_method,
                                     )
                                 except TileOutsideBounds:
                                     continue
@@ -133,11 +138,17 @@ def render_trend_map(
     output_dir.mkdir(parents=True, exist_ok=True)
     slope_image = _slope_rgba(slope, limit)
     stipple_image = _stipple_rgba(slope, significant)
-    _write_xyz_tiles(slope_image, output_dir / "slope", max_zoom=max_zoom)
+    _write_xyz_tiles(
+        slope_image,
+        output_dir / "slope",
+        max_zoom=max_zoom,
+        resampling_method="bilinear",
+    )
     _write_xyz_tiles(
         stipple_image,
         output_dir / "nonsignificant",
         max_zoom=max_zoom,
+        resampling_method="nearest",
     )
     height, width = slope.shape
     (output_dir / "slope.png").write_bytes(

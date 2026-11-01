@@ -5,14 +5,18 @@ import type { MapLayer } from './api'
 const blankStyle = {
   version: 8 as const,
   sources: {
-    'carto-light': {
+    gibs: {
       type: 'raster' as const,
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tiles: [
+        'https://gibs-a.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2018-06-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+        'https://gibs-b.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2018-06-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+        'https://gibs-c.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/2018-06-01/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg',
+      ],
       tileSize: 256,
-      attribution: '© OpenStreetMap contributors',
+      attribution: 'NASA Global Imagery Browse Services (GIBS)',
     },
   },
-  layers: [{ id: 'carto-light', type: 'raster' as const, source: 'carto-light' }],
+  layers: [{ id: 'gibs', type: 'raster' as const, source: 'gibs' }],
 }
 
 export function useMap(

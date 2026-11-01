@@ -123,7 +123,7 @@ def render_trend_map(
     if not 0 <= max_zoom <= 5:
         raise ValueError("The MVP tile zoom range must be between 0 and 5")
     with xr.open_zarr(trends_path) as dataset:
-        slope = np.asarray(dataset.slope.transpose("lat", "lon").values, dtype=float)[::-1]
+        slope = np.asarray(dataset.slope_ols.transpose("lat", "lon").values, dtype=float)[::-1]
         significant = np.asarray(
             dataset.significant_fdr.transpose("lat", "lon").values, dtype=bool
         )[::-1]
@@ -160,6 +160,8 @@ def render_trend_map(
     metadata: dict[str, object] = {
         "bounds": [[-180, 90], [180, 90], [180, -90], [-180, -90]],
         "slope_unit": "K/year",
+        "slope_method": "OLS linear trend",
+        "significance_method": "Hamed-Rao modified Mann-Kendall with Benjamini-Hochberg FDR",
         "scale_min": -limit,
         "scale_max": limit,
         "scale_percentile": scale_percentile,

@@ -21,7 +21,7 @@ def test_render_builds_xyz_slope_and_stipple_tiles(tmp_path) -> None:
     significant[1, 2] = True
     dataset = xr.Dataset(
         {
-            "slope": (("lat", "lon"), slope),
+            "slope_ols": (("lat", "lon"), slope),
             "significant_fdr": (("lat", "lon"), significant),
         },
         coords={"lat": [-67.5, -22.5, 22.5, 67.5], "lon": np.linspace(-157.5, 157.5, 8)},
@@ -43,6 +43,7 @@ def test_render_builds_xyz_slope_and_stipple_tiles(tmp_path) -> None:
     assert metadata["maxzoom"] == 1
     saved = json.loads((tmp_path / "output/palette.json").read_text())
     assert saved["slope_unit"] == "K/year"
+    assert saved["slope_method"] == "OLS linear trend"
     assert saved["tile_scheme"] == "XYZ / WebMercatorQuad"
 
 
@@ -50,7 +51,7 @@ def test_mvp_tile_generator_rejects_zoom_levels_above_five(tmp_path) -> None:
     source = tmp_path / "trends.zarr"
     dataset = xr.Dataset(
         {
-            "slope": (("lat", "lon"), [[0.1]]),
+            "slope_ols": (("lat", "lon"), [[0.1]]),
             "significant_fdr": (("lat", "lon"), [[True]]),
         },
         coords={"lat": [0.0], "lon": [0.0]},

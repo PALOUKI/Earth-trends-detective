@@ -54,7 +54,7 @@ def test_trend_methods_match_references_over_seeded_series() -> None:
         result = analyze_series(values)
         sen = stats.theilslopes(values, np.arange(values.size) / 12)
         original = mk.original_test(values)
-        hamed_rao = mk.hamed_rao_modification_test(values)
+        hamed_rao = mk.hamed_rao_modification_test(values, lag=min(3, values.size - 1))
         assert abs(result["slope"] - sen.slope) < 1e-12
         assert abs(result["p_mk"] - original.p) < 1e-12
         if np.isfinite(hamed_rao.p):
@@ -76,10 +76,13 @@ def test_fdr_does_not_increase_significant_pixel_count() -> None:
 
 def test_mann_kendall_false_positive_rate_is_reasonable_without_trend() -> None:
     rng = np.random.default_rng(2027)
-    false_positives = 0
+    mk_false_positives = 0
+    hr_false_positives = 0
     simulations = 120
     for _ in range(simulations):
         result = analyze_series(rng.normal(size=120))
-        false_positives += result["p_mk"] < 0.05
+        mk_false_positives += result["p_mk"] < 0.05
+        hr_false_positives += result["p_value"] < 0.05
 
-    assert false_positives / simulations < 0.12
+    assert mk_false_positives / simulations < 0.12
+    assert hr_false_positives / simulations < 0.12

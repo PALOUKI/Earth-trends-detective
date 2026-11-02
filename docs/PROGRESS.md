@@ -99,6 +99,7 @@ Updated: 2026-11-02
 - [x] Replaced the dated MODIS true-color base image with GIBS `BlueMarble_NextGeneration`, verified in the live WMTS capabilities and by a real HTTP 200 tile request; GIBS remains geographic background imagery only.
 - [x] Trend tiles preserve the native GISTEMP grid with nearest-neighbor display resampling, reduced overlay opacity, and transparent missing cells; stipple marks remain crisp. These are display choices only; statistical source values are unchanged.
 - [x] Regional comparison is now exposed in the frontend because comparing opposite regional trends is part of the official challenge scope (section 1 bis).
+- [x] Fixed the comparison variable selector: `/api/variables` already returns only analysis-ready products, while its response schema omits catalog `status`; the frontend no longer filters that response by the omitted field. Inventory requests now settle independently so a failed catalogue or region request does not discard ready variables.
 - [x] Integrated the supplied Stitch landing, variable catalogue, regional comparison, methods, about/credits, and export screens as application views. All dataset names, statuses, periods, sources, and DOI links are populated from the live API catalogue; comparison results and exports use the existing analysis endpoints.
 - [x] Added responsive navigation and single-column layouts for the new catalog, comparison, and landing screens on narrow viewports.
 - [x] Added plain-language p-value, confidence-interval, and significance explanations in English and French.

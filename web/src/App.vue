@@ -26,6 +26,7 @@ const copy = {
     inventory: 'Verified data inventory', readyDatasets: 'analysis-ready datasets',
     processingDatasets: 'in progress', variableSearch: 'Search verified variables', allStatuses: 'All statuses',
     readyStatus: 'Analysis ready', compareTitle: 'Compare two regions',
+    loadingVariables: 'Loading analysis-ready variables…', noAvailableVariables: 'The API has not returned any analysis-ready variables.',
     compareIntro: 'Use the same available variable and full record for both regions. Results are calculated from their actual processed series.',
     regionA: 'Region A', regionB: 'Region B', runCompare: 'Compare regions', rateA: 'Region A rate', rateB: 'Region B rate',
     compareCaveat: 'Differences describe the selected regional averages. They do not establish a cause.',
@@ -83,6 +84,7 @@ const copy = {
     inventory: 'Catalogue réel des données', readyDatasets: 'variables analysables',
     processingDatasets: 'en cours', variableSearch: 'Rechercher une variable vérifiée', allStatuses: 'Tous les états',
     readyStatus: 'Analyse disponible', compareTitle: 'Comparer deux régions',
+    loadingVariables: 'Chargement des variables analysables…', noAvailableVariables: 'L’API n’a renvoyé aucune variable analysable.',
     compareIntro: 'Une même variable et toute la période disponible sont utilisées dans les deux régions. Les résultats sont calculés à partir des séries traitées.',
     regionA: 'Région A', regionB: 'Région B', runCompare: 'Comparer les régions', rateA: 'Taux région A', rateB: 'Taux région B',
     compareCaveat: 'Les différences décrivent les moyennes régionales choisies ; elles ne démontrent pas une cause.',
@@ -140,19 +142,26 @@ const mapLayer = ref<MapLayer | null>(null)
 const mapWindow = ref<WindowId>('full')
 const variables = ref<VariableInfo[]>([])
 const catalogVariables = ref<VariableInfo[]>([])
-const readyVariables = computed(() => variables.value.filter((item) => item.status === 'analysis_ready'))
+// /api/variables already filters to analysis-ready records; its response schema
+// intentionally omits catalog-only fields such as `status`.
+const readyVariables = computed(() => variables.value.length
+  ? variables.value
+  : catalogVariables.value.filter((item) => item.status === 'analysis_ready'))
+const inventoryLoading = ref(true)
 const catalogSearch = ref('')
 const catalogStatus = ref('all')
 const selectedVariable = ref('gistemp_tas_anom')
 const wizardTheme = ref('climate')
-const activeVariable = computed(() => catalogVariables.value.find((item) => item.id === selectedVariable.value) ?? variables.value[0])
+const activeVariable = computed(() => catalogVariables.value.find((item) => item.id === selectedVariable.value)
+  ?? readyVariables.value.find((item) => item.id === selectedVariable.value)
+  ?? readyVariables.value[0])
 const wizardVariableId = computed(() => ({
   climate: 'gistemp_tas_anom', water: 'gpm_precipitation', vegetation: 'modis_ndvi',
   air: 'omi_no2',
 }[wizardTheme.value] ?? 'gistemp_tas_anom'))
 const wizardVariable = computed(() => catalogVariables.value.find((item) => item.id === wizardVariableId.value) ?? variables.value[0])
 const wizardVariableReady = computed(() => variables.value.some((item) => item.id === wizardVariableId.value))
-const isAnalysisReady = computed(() => activeVariable.value?.status === 'analysis_ready')
+const isAnalysisReady = computed(() => readyVariables.value.some((item) => item.id === selectedVariable.value))
 const filteredCatalog = computed(() => catalogVariables.value.filter((item) => {
   const query = catalogSearch.value.toLowerCase()
   const matchesText = `${item.name} ${item.name_fr} ${item.source ?? ''} ${item.short_name ?? ''}`.toLowerCase().includes(query)
@@ -234,6 +243,10 @@ function comparisonChartOption(result: Analysis) {
 }
 
 async function runComparison() {
+  if (!readyVariables.value.some((item) => item.id === selectedVariable.value)) {
+    error.value = t.value.noAvailableVariables
+    return
+  }
   if (compareA.value === compareB.value) {
     error.value = locale.value === 'fr' ? 'Choisissez deux régions différentes.' : 'Choose two different regions.'
     return
@@ -441,14 +454,16 @@ watch(locale, () => {
 })
 
 onMounted(async () => {
-  try {
-    ;[variables.value, catalogVariables.value, regions.value] = await Promise.all([
-      api.variables(), api.catalog(), api.regions(),
-    ])
-    await Promise.all([loadMap(), runAnalysis()])
-  } catch (caught) {
-    error.value = caught instanceof Error ? caught.message : String(caught)
+  const results = await Promise.allSettled([api.variables(), api.catalog(), api.regions()])
+  if (results[0].status === 'fulfilled') variables.value = results[0].value
+  if (results[1].status === 'fulfilled') catalogVariables.value = results[1].value
+  if (results[2].status === 'fulfilled') regions.value = results[2].value
+  inventoryLoading.value = false
+  const failed = results.find((result) => result.status === 'rejected')
+  if (failed?.status === 'rejected' && !readyVariables.value.length) {
+    error.value = failed.reason instanceof Error ? failed.reason.message : String(failed.reason)
   }
+  await Promise.all([loadMap(), runAnalysis()])
 })
 </script>
 
@@ -527,6 +542,8 @@ onMounted(async () => {
         <label>{{ t.regionB }}<select v-model="compareB"><option v-for="item in regions" :key="item.id" :value="item.id">{{ locale === 'fr' ? item.name_fr : item.name }}</option></select></label>
         <button class="button primary" :disabled="comparing || !readyVariables.length" @click="runComparison">{{ comparing ? t.loading : t.runCompare }}</button>
       </div>
+      <p v-if="inventoryLoading" class="empty-catalog" role="status">{{ t.loadingVariables }}</p>
+      <p v-else-if="!readyVariables.length" class="empty-catalog" role="status">{{ t.noAvailableVariables }} {{ error }}</p>
       <div v-if="comparison" class="comparison-grid">
         <article v-for="(result, index) in [comparison.a, comparison.b]" :key="index" class="comparison-card">
           <span class="eyebrow">{{ index === 0 ? t.regionA : t.regionB }} · {{ result.period.start }} — {{ result.period.end }}</span>

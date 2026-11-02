@@ -3,14 +3,20 @@
 from __future__ import annotations
 
 import re
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from urllib.parse import urlsplit
 
 import earthaccess
 import h5py
 import numpy as np
 import pandas as pd
+import requests
 import xarray as xr
 from dotenv import load_dotenv
+from tqdm import tqdm
 
 SHORT_NAME = "OMNO2d"
 VERSION = "004"
@@ -24,6 +30,9 @@ OUTPUT = Path("data/processed/omi_no2.zarr")
 DEFAULT_START = "2005-01-01"
 DEFAULT_END = "2014-12-31"
 FILL_VALUE = -1.2676506e30
+DOWNLOAD_THREADS = 4
+DOWNLOAD_ATTEMPTS = 5
+_THREAD_SESSIONS = threading.local()
 
 
 def _valid_grid_metadata(source: h5py.File) -> bool:
@@ -110,6 +119,70 @@ def _is_complete_daily(path: Path) -> bool:
         return False
 
 
+def _thread_session(template: requests.Session) -> requests.Session:
+    """Clone Earthaccess authentication once per worker thread."""
+    session = getattr(_THREAD_SESSIONS, "session", None)
+    if session is None:
+        session = type(template)()
+        session.headers.update(template.headers)
+        session.cookies.update(template.cookies)
+        session.auth = template.auth
+        _THREAD_SESSIONS.session = session
+    return session
+
+
+def _download_one_omi(granule: object, raw_dir: Path, template: requests.Session) -> Path:
+    """Download one granule with a bounded timeout and resumable Range requests."""
+    links = granule.data_links(access="https")  # type: ignore[attr-defined]
+    if not links:
+        raise RuntimeError("CMR supplied no HTTPS link for an OMI granule")
+    url = links[0]
+    filename = Path(urlsplit(url).path).name
+    destination = raw_dir / filename
+    partial = destination.with_suffix(destination.suffix + ".partial")
+    if _is_complete_daily(destination):
+        return destination
+    if destination.exists():
+        destination.replace(partial)
+
+    session = _thread_session(template)
+    for attempt in range(DOWNLOAD_ATTEMPTS):
+        offset = partial.stat().st_size if partial.exists() else 0
+        headers = {"Range": f"bytes={offset}-"} if offset else {}
+        try:
+            with session.get(
+                url,
+                headers=headers,
+                stream=True,
+                allow_redirects=True,
+                timeout=(30, 120),
+            ) as response:
+                response.raise_for_status()
+                append = False
+                if offset and response.status_code == 206:
+                    content_range = response.headers.get("Content-Range", "")
+                    append = content_range.startswith(f"bytes {offset}-")
+                mode = "ab" if append else "wb"
+                with partial.open(mode) as output:
+                    for chunk in response.iter_content(chunk_size=1024 * 1024):
+                        if chunk:
+                            output.write(chunk)
+            partial.replace(destination)
+            if _is_complete_daily(destination):
+                return destination
+            destination.replace(partial)
+            # An HTTP-complete but structurally invalid response is not resumable.
+            partial.unlink(missing_ok=True)
+            raise RuntimeError(f"Downloaded OMI payload failed HDF-EOS validation: {filename}")
+        except (requests.RequestException, OSError, RuntimeError) as error:
+            if attempt + 1 == DOWNLOAD_ATTEMPTS:
+                raise RuntimeError(
+                    f"Failed to complete OMI granule {filename} after {DOWNLOAD_ATTEMPTS} attempts"
+                ) from error
+            time.sleep(min(2**attempt, 30))
+    raise RuntimeError(f"Unable to download OMI granule {filename}")
+
+
 def download_omi(
     start: str = DEFAULT_START,
     end: str = DEFAULT_END,
@@ -141,12 +214,17 @@ def download_omi(
             if destination.exists():
                 destination.replace(destination.with_suffix(destination.suffix + ".partial"))
             pending.append(granule)
-    files = earthaccess.download(pending, str(raw_dir)) if pending else []
-    completed = [Path(path) for path in files]
-    bad_files = [path for path in completed if not _is_complete_daily(path)]
-    if bad_files:
-        names = ", ".join(path.name for path in bad_files[:5])
-        raise RuntimeError(f"OMI download produced incomplete or invalid files: {names}")
+    if not pending:
+        return []
+    auth_session = earthaccess.get_requests_https_session()
+    completed: list[Path] = []
+    with ThreadPoolExecutor(max_workers=DOWNLOAD_THREADS) as executor:
+        futures = {
+            executor.submit(_download_one_omi, granule, raw_dir, auth_session): granule
+            for granule in pending
+        }
+        for future in tqdm(as_completed(futures), total=len(futures), desc="Downloading OMI"):
+            completed.append(future.result())
     return completed
 
 

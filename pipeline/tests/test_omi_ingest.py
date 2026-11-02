@@ -2,6 +2,7 @@ import h5py
 import numpy as np
 import pytest
 
+from pipeline.ingest import omi_no2
 from pipeline.ingest.omi_no2 import FIELD, FILL_VALUE, _coarsen_daily_grid, _read_daily
 
 GRID_METADATA = (
@@ -49,3 +50,58 @@ def test_omi_reader_rejects_wrong_units(tmp_path):
 
     with pytest.raises(ValueError, match="Unexpected OMNO2d units"):
         _read_daily(path)
+
+
+def test_omi_download_resumes_partial_payload_with_bounded_timeout(tmp_path, monkeypatch):
+    payload = b"abcdef"
+    partial = tmp_path / "OMI-Aura_L3-OMNO2d_2007m0326_v004-test.he5.partial"
+    partial.write_bytes(b"abc")
+
+    class Response:
+        status_code = 206
+        headers = {"Content-Range": "bytes 3-5/6"}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def raise_for_status(self):
+            return None
+
+        def iter_content(self, chunk_size):
+            assert chunk_size == 1024 * 1024
+            yield payload[3:]
+
+    class Session:
+        def __init__(self):
+            self.headers = {}
+            self.cookies = {}
+            self.auth = None
+            self.calls = []
+
+        def get(self, url, **kwargs):
+            self.calls.append((url, kwargs))
+            return Response()
+
+    class Granule:
+        def data_links(self, access):
+            assert access == "https"
+            return ["https://example.test/OMI-Aura_L3-OMNO2d_2007m0326_v004-test.he5"]
+
+    template = Session()
+    monkeypatch.setattr(
+        omi_no2,
+        "_is_complete_daily",
+        lambda path: path.exists() and path.stat().st_size == len(payload),
+    )
+    if hasattr(omi_no2._THREAD_SESSIONS, "session"):
+        del omi_no2._THREAD_SESSIONS.session
+
+    result = omi_no2._download_one_omi(Granule(), tmp_path, template)
+    worker_session = omi_no2._THREAD_SESSIONS.session
+
+    assert result.read_bytes() == payload
+    assert worker_session.calls[0][1]["headers"] == {"Range": "bytes=3-"}
+    assert worker_session.calls[0][1]["timeout"] == (30, 120)

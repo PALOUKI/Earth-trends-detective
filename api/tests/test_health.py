@@ -74,3 +74,13 @@ def test_catalog_distinguishes_ready_sample_and_access_blocked_products() -> Non
         "series_processed",
         "analysis_ready",
     }
+
+
+def test_air_quality_suggestion_explains_omi_is_still_downloading() -> None:
+    response = _request("/api/suggest?theme=air")
+
+    assert response.status_code == 200
+    suggestion = response.json()[0]
+    assert suggestion["variable"] == "omi_no2"
+    assert suggestion["available"] is False
+    assert "being downloaded" in suggestion["message"]

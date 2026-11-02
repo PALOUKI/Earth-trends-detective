@@ -201,8 +201,9 @@ CATALOG = [
         "short_name": "OMNO2d",
         "status": "acquiring",
         "status_detail": (
-            "The measured field and units are verified from a real granule; daily-to-monthly "
-            "aggregation and trend products are pending."
+            "The measured field and units are verified. NASA daily granules for 2005–2014 "
+            "are being downloaded; monthly aggregation and trend maps follow after the "
+            "120-month series is complete."
         ),
     },
 ]

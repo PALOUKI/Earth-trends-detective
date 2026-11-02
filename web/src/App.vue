@@ -21,6 +21,8 @@ const copy = {
     parameters: 'Analysis parameters', dataset: 'DATASET', variable: 'Variable',
     accessBlocked: 'Access authorization pending', sampleOnly: 'Sample acquired; trend analysis pending',
     acquiring: 'Downloading granules; analysis pending', seriesProcessed: 'Time series processed; maps pending',
+    qualityPending: 'NASA OMI air-quality observations are still downloading. The 2005–2014 monthly series and trend maps are not ready yet.',
+    variablePending: 'This NASA dataset is still being prepared and cannot be analyzed yet.',
     place: 'Study area', selectRegion: 'Choose a region', draw: 'Draw a rectangle',
     drawing: 'Drag on the map to draw', period: 'Analysis period', full: 'Full record',
     since2010: 'Since 2010', since2015: 'Since 2015', apply: 'Analyze region',
@@ -60,6 +62,8 @@ const copy = {
     parameters: 'Paramètres d’analyse', dataset: 'JEU DE DONNÉES', variable: 'Variable',
     accessBlocked: 'Autorisation d’accès en attente', sampleOnly: 'Échantillon acquis ; analyse en attente',
     acquiring: 'Granules en téléchargement ; analyse en attente', seriesProcessed: 'Série prétraitée ; cartes en attente',
+    qualityPending: 'Les observations NASA OMI sur la qualité de l’air sont encore en téléchargement. La série mensuelle 2005–2014 et ses cartes de tendance ne sont pas encore prêtes.',
+    variablePending: 'Ce jeu de données NASA est encore en préparation et ne peut pas encore être analysé.',
     place: 'Zone étudiée', selectRegion: 'Choisir une région', draw: 'Dessiner un rectangle',
     drawing: 'Tracer sur la carte', period: 'Période d’analyse', full: 'Toute la série',
     since2010: 'Depuis 2010', since2015: 'Depuis 2015', apply: 'Analyser la région',
@@ -105,7 +109,14 @@ const mapWindow = ref<WindowId>('full')
 const variables = ref<VariableInfo[]>([])
 const catalogVariables = ref<VariableInfo[]>([])
 const selectedVariable = ref('gistemp_tas_anom')
+const wizardTheme = ref('climate')
 const activeVariable = computed(() => catalogVariables.value.find((item) => item.id === selectedVariable.value) ?? variables.value[0])
+const wizardVariableId = computed(() => ({
+  climate: 'gistemp_tas_anom', water: 'gpm_precipitation', vegetation: 'modis_ndvi',
+  air: 'omi_no2',
+}[wizardTheme.value] ?? 'gistemp_tas_anom'))
+const wizardVariable = computed(() => catalogVariables.value.find((item) => item.id === wizardVariableId.value) ?? variables.value[0])
+const wizardVariableReady = computed(() => variables.value.some((item) => item.id === wizardVariableId.value))
 const isAnalysisReady = computed(() => activeVariable.value?.status === 'analysis_ready')
 const regions = ref<RegionInfo[]>([])
 const regionId = ref('amazon')
@@ -119,7 +130,6 @@ const mapLoading = ref(false)
 const error = ref('')
 const showWizard = ref(true)
 const wizardStep = ref(1)
-const wizardTheme = ref('climate')
 const wizardPlace = ref('Amazon')
 const showDemos = ref(false)
 const demoStep = ref(0)
@@ -255,11 +265,13 @@ async function wizardNext() {
   }
   showWizard.value = false
   const suggestions = await api.suggest(wizardTheme.value, wizardPlace.value)
-  if (suggestions[0]?.variable) selectedVariable.value = suggestions[0].variable
   if (!suggestions[0]?.available) {
-    error.value = suggestions[0]?.message ?? ''
+    error.value = suggestions[0]?.variable === 'omi_no2'
+      ? t.value.qualityPending
+      : suggestions[0]?.message ?? ''
     return
   }
+  if (suggestions[0]?.variable) selectedVariable.value = suggestions[0].variable
   const match = regions.value.find((item) => `${item.name} ${item.name_fr}`.toLowerCase().includes(wizardPlace.value.toLowerCase()))
   if (match) chooseRegion(match.id)
 }
@@ -463,7 +475,7 @@ onMounted(async () => {
         <span class="step-label">{{ locale === 'en' ? 'STEP' : 'ÉTAPE' }} {{ wizardStep }} / 3</span>
         <template v-if="wizardStep === 1"><h2 id="wizard-title">{{ t.theme }}</h2><div class="choice-grid"><button v-for="choice in [['climate', t.themeClimate], ['water', t.themeWater], ['vegetation', t.themePlants], ['air', t.themeAir]]" :key="choice[0]" :class="{ chosen: wizardTheme === choice[0] }" @click="wizardTheme = choice[0]">{{ choice[1] }}</button></div></template>
         <template v-else-if="wizardStep === 2"><h2 id="wizard-title">{{ t.where }}</h2><label class="field-label" for="wizard-place">{{ t.place }}</label><input id="wizard-place" v-model="wizardPlace" class="text-input" placeholder="e.g. Amazon" /><div class="quick-places"><button v-for="region in regions" :key="region.id" @click="wizardPlace = locale === 'fr' ? region.name_fr : region.name">{{ locale === 'fr' ? region.name_fr : region.name }}</button></div></template>
-        <template v-else><h2 id="wizard-title">{{ t.variable }}</h2><div class="wizard-variable"><strong>{{ activeVariable?.[locale === 'en' ? 'name' : 'name_fr'] }}</strong><p>{{ activeVariable?.[locale === 'en' ? 'definition' : 'definition_fr'] }}</p><span>{{ activeVariable?.source }}</span></div></template>
+        <template v-else><h2 id="wizard-title">{{ t.variable }}</h2><div class="wizard-variable"><strong>{{ wizardVariable?.[locale === 'en' ? 'name' : 'name_fr'] }}</strong><p>{{ wizardVariable?.[locale === 'en' ? 'definition' : 'definition_fr'] }}</p><span>{{ wizardVariable?.source }}</span><p v-if="!wizardVariableReady" class="wizard-pending">{{ wizardVariableId === 'omi_no2' ? t.qualityPending : t.variablePending }}</p></div></template>
         <div class="dialog-actions"><button class="button secondary" :disabled="wizardStep === 1" @click="wizardStep--">{{ locale === 'en' ? 'Back' : 'Retour' }}</button><button class="button primary" @click="wizardNext">{{ wizardStep === 3 ? t.apply : locale === 'en' ? 'Continue' : 'Continuer' }} <span aria-hidden="true">→</span></button></div>
       </section>
     </div>

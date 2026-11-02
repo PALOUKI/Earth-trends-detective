@@ -18,12 +18,17 @@ type AppPage = 'home' | 'explore' | 'variables' | 'compare' | 'methods' | 'about
 const copy = {
   en: {
     home: 'Home', variablesPage: 'Variables', comparePage: 'Compare',
-    homeTitle: 'Find out what is changing on Earth',
-    homeLead: 'Choose a NASA Earth science variable and a place. Explore its monthly record, estimate the rate of change, and check the statistical evidence.',
-    startInvestigation: 'Start an investigation', browseVariables: 'Browse verified variables',
-    howTitle: 'From question to evidence', howChoose: 'Choose a measured variable',
-    howRegion: 'Select a region', howAnalyze: 'Inspect the time series and trend tests',
-    inventory: 'Verified data inventory', readyDatasets: 'analysis-ready datasets',
+    homeTitle: 'Is the Earth changing where you live?',
+    homeLead: 'Explore NASA Earth science data for a place you choose. Follow the time series, estimate a linear trend, and inspect its statistical evidence.',
+    startInvestigation: 'Start investigating', browseVariables: 'Browse variables', watchVideo: 'Try a guided example',
+    heroFacts: 'Monthly records · Regional analysis · Statistical tests',
+    mapPreview: 'Global trend layer', mapPreviewPeriod: 'Processed GISTEMP v4 record', mapPreviewNote: 'Observed global slope layer · non-significant cells are stippled',
+    howKicker: 'A REPEATABLE WORKFLOW', howTitle: 'How it works', howLead: 'From a question about a place to a result you can inspect.',
+    howChoose: 'Choose a variable', howChooseText: 'Browse measured and modelled NASA products with their definitions, units, sources, and available periods.',
+    howRegion: 'Choose a region', howRegionText: 'Select an example region or draw a custom area to calculate its area-weighted monthly series.',
+    howAnalyze: 'Read the evidence', howAnalyzeText: 'Inspect the series, linear rate, confidence interval, and significance tests together.',
+    videoKicker: 'DEMO VIDEO', videoTitle: 'See how an investigation works', videoText: 'The project walkthrough video will be added here.', guidedExamples: 'Explore guided examples',
+    inventory: 'DATA AVAILABLE NOW', readyDatasets: 'variables ready for analysis',
     processingDatasets: 'in progress', variableSearch: 'Search verified variables', allStatuses: 'All statuses',
     readyStatus: 'Analysis ready', compareTitle: 'Compare two regions',
     loadingVariables: 'Loading analysis-ready variables…', noAvailableVariables: 'The API has not returned any analysis-ready variables.',
@@ -34,6 +39,7 @@ const copy = {
     exportPNG: 'Precomputed trend map (PNG)', exportTIF: 'Trend grid (GeoTIFF)',
     exportNote: 'Exports use the selected processed dataset. Map files are available only when generated.',
     notOfficial: 'Independent project; not an official NASA product.',
+    footerNote: 'Results describe statistical trends in the selected records; they do not establish causes.', footerExplore: 'Explore', footerScience: 'Science', footerProject: 'Project', footerSources: 'Data sources',
     explore: 'Explore', methods: 'Methods & validation', about: 'About', lang: 'Français',
     parameters: 'Analysis parameters', dataset: 'DATASET', variable: 'Variable',
     accessBlocked: 'Access authorization pending', sampleOnly: 'Sample acquired; trend analysis pending',
@@ -76,12 +82,17 @@ const copy = {
   },
   fr: {
     home: 'Accueil', variablesPage: 'Variables', comparePage: 'Comparer',
-    homeTitle: 'Découvrir ce qui change sur Terre',
-    homeLead: 'Choisissez une variable NASA et un lieu. Explorez sa série mensuelle, estimez le rythme de changement et consultez les tests statistiques.',
-    startInvestigation: 'Commencer une enquête', browseVariables: 'Voir les variables vérifiées',
-    howTitle: 'De la question aux résultats', howChoose: 'Choisir une variable mesurée',
-    howRegion: 'Sélectionner une région', howAnalyze: 'Examiner la série et les tests de tendance',
-    inventory: 'Catalogue réel des données', readyDatasets: 'variables analysables',
+    homeTitle: 'La Terre change-t-elle là où vous vivez ?',
+    homeLead: 'Explorez les données NASA des sciences de la Terre pour un lieu de votre choix. Suivez la série temporelle, estimez une tendance linéaire et examinez les preuves statistiques.',
+    startInvestigation: 'Commencer l’enquête', browseVariables: 'Parcourir les variables', watchVideo: 'Essayer un exemple guidé',
+    heroFacts: 'Séries mensuelles · Analyse régionale · Tests statistiques',
+    mapPreview: 'Couche mondiale de tendance', mapPreviewPeriod: 'Série GISTEMP v4 traitée', mapPreviewNote: 'Pente globale observée · les mailles non significatives sont pointillées',
+    howKicker: 'UN PARCOURS REPRODUCTIBLE', howTitle: 'Comment ça marche', howLead: 'D’une question sur un lieu à un résultat que vous pouvez examiner.',
+    howChoose: 'Choisir une variable', howChooseText: 'Parcourez les produits NASA mesurés ou modélisés, avec leurs définitions, unités, sources et périodes disponibles.',
+    howRegion: 'Choisir une région', howRegionText: 'Sélectionnez une région d’exemple ou dessinez une zone pour calculer sa série mensuelle pondérée par la surface.',
+    howAnalyze: 'Examiner les résultats', howAnalyzeText: 'Consultez ensemble la série, le taux linéaire, l’intervalle de confiance et les tests de significativité.',
+    videoKicker: 'VIDÉO DÉMO', videoTitle: 'Voir une enquête en action', videoText: 'La vidéo de présentation du projet sera ajoutée ici.', guidedExamples: 'Explorer les exemples guidés',
+    inventory: 'DONNÉES DISPONIBLES', readyDatasets: 'variables analysables',
     processingDatasets: 'en cours', variableSearch: 'Rechercher une variable vérifiée', allStatuses: 'Tous les états',
     readyStatus: 'Analyse disponible', compareTitle: 'Comparer deux régions',
     loadingVariables: 'Chargement des variables analysables…', noAvailableVariables: 'L’API n’a renvoyé aucune variable analysable.',
@@ -92,6 +103,7 @@ const copy = {
     exportPNG: 'Carte de tendance précalculée (PNG)', exportTIF: 'Grille de tendance (GeoTIFF)',
     exportNote: 'Les exports utilisent les données traitées sélectionnées. Les cartes sont disponibles uniquement si elles ont été générées.',
     notOfficial: 'Projet indépendant ; ce n’est pas un produit officiel de la NASA.',
+    footerNote: 'Les résultats décrivent des tendances statistiques dans les données choisies ; ils n’en établissent pas les causes.', footerExplore: 'Explorer', footerScience: 'Méthodes', footerProject: 'Projet', footerSources: 'Sources des données',
     explore: 'Explorer', methods: 'Méthodes et validation', about: 'À propos', lang: 'English',
     parameters: 'Paramètres d’analyse', dataset: 'JEU DE DONNÉES', variable: 'Variable',
     accessBlocked: 'Autorisation d’accès en attente', sampleOnly: 'Échantillon acquis ; analyse en attente',
@@ -139,6 +151,7 @@ const t = computed(() => copy[locale.value])
 const page = ref<AppPage>('home')
 const mapElement = ref<HTMLElement | null>(null)
 const mapLayer = ref<MapLayer | null>(null)
+const landingMapLayer = ref<MapLayer | null>(null)
 const mapWindow = ref<WindowId>('full')
 const variables = ref<VariableInfo[]>([])
 const catalogVariables = ref<VariableInfo[]>([])
@@ -147,6 +160,13 @@ const catalogVariables = ref<VariableInfo[]>([])
 const readyVariables = computed(() => variables.value.length
   ? variables.value
   : catalogVariables.value.filter((item) => item.status === 'analysis_ready'))
+const gistempCatalogItem = computed(() => catalogVariables.value.find((item) => item.id === 'gistemp_tas_anom'))
+const landingSlopeUrl = computed(() => api.exportUrl({
+  variable: 'gistemp_tas_anom', format: 'png', window: 'full', layer: 'slope',
+}))
+const landingSignificanceUrl = computed(() => api.exportUrl({
+  variable: 'gistemp_tas_anom', format: 'png', window: 'full', layer: 'nonsignificant',
+}))
 const inventoryLoading = ref(true)
 const catalogSearch = ref('')
 const catalogStatus = ref('all')
@@ -399,6 +419,7 @@ async function wizardNext() {
 }
 
 async function startDemo(id: string) {
+  page.value = 'explore'
   selectedVariable.value = 'gistemp_tas_anom'
   activeDemo.value = id
   demoStep.value = 1
@@ -454,6 +475,7 @@ watch(locale, () => {
 })
 
 onMounted(async () => {
+  void api.map('gistemp_tas_anom', 'full').then((layer) => { landingMapLayer.value = layer }).catch(() => {})
   const results = await Promise.allSettled([api.variables(), api.catalog(), api.regions()])
   if (results[0].status === 'fulfilled') variables.value = results[0].value
   if (results[1].status === 'fulfilled') catalogVariables.value = results[1].value
@@ -492,31 +514,59 @@ onMounted(async () => {
 
     <main v-if="page === 'home'" class="home-page">
       <section class="landing-hero">
-        <span class="eyebrow">NASA EARTH SCIENCE · DATA TRENDS</span>
+        <span class="landing-kicker"><span class="status-dot"></span>{{ t.heroFacts }}</span>
         <h1>{{ t.homeTitle }}</h1>
         <p>{{ t.homeLead }}</p>
         <div class="landing-actions">
-          <button class="button primary" @click="page = 'explore'; beginWizard()">{{ t.startInvestigation }} →</button>
-          <button class="button secondary" @click="page = 'variables'">{{ t.browseVariables }}</button>
-        </div>
-        <div class="landing-inventory" aria-live="polite">
-          <strong>{{ readyVariables.length }}</strong><span>{{ t.readyDatasets }}</span>
-          <i></i><strong>{{ catalogVariables.filter((item) => item.status !== 'analysis_ready').length }}</strong><span>{{ t.processingDatasets }}</span>
+          <button class="button primary landing-primary" @click="page = 'explore'; beginWizard()">{{ t.startInvestigation }} <span aria-hidden="true">→</span></button>
+          <button class="button secondary landing-secondary" @click="showDemos = true"><span aria-hidden="true">▷</span> {{ t.watchVideo }}</button>
         </div>
       </section>
-      <section class="landing-section">
-        <div class="section-heading"><span class="eyebrow">{{ t.howTitle }}</span><button class="text-button" @click="page = 'methods'">{{ t.methods }} →</button></div>
+
+      <section class="landing-map-card" aria-labelledby="landing-map-title">
+        <div class="landing-map-toolbar">
+          <div><span class="eyebrow">{{ t.mapPreview }}</span><h2 id="landing-map-title">{{ gistempCatalogItem?.source ?? 'NASA GISS GISTEMP v4' }}</h2></div>
+          <span class="map-period-chip">{{ gistempCatalogItem?.period ?? t.mapPreviewPeriod }}</span>
+        </div>
+        <div class="landing-world-map" role="img" :aria-label="`${t.mapPreview} — ${gistempCatalogItem?.source ?? 'NASA GISS GISTEMP v4'}`">
+          <img class="landing-slope-image" :src="landingSlopeUrl" alt="" />
+          <img class="landing-significance-image" :src="landingSignificanceUrl" alt="" />
+          <span v-if="!landingMapLayer" class="map-preview-loading">{{ t.loadingMap }}</span>
+        </div>
+        <div class="landing-map-legend">
+          <span>{{ landingMapLayer?.scale_min.toFixed(3) ?? '−' }}</span>
+          <div class="legend-gradient"></div><span>0</span><div class="legend-gradient reverse"></div>
+          <span>+{{ Math.abs(landingMapLayer?.scale_max ?? 0).toFixed(3) }}</span><small>{{ landingMapLayer?.slope_unit ?? 'K/year' }}</small>
+          <span class="landing-map-note">{{ t.mapPreviewNote }}</span>
+        </div>
+      </section>
+
+      <section class="landing-section how-section">
+        <div class="landing-section-heading"><span class="eyebrow">{{ t.howKicker }}</span><h2>{{ t.howTitle }}</h2><p>{{ t.howLead }}</p></div>
         <div class="landing-steps">
-          <article><span class="method-index">01</span><h2>{{ t.howChoose }}</h2><p>{{ locale === 'fr' ? 'Les jeux NASA sont listés avec leur source, période, unité et état d’intégration.' : 'NASA datasets are listed with source, period, unit, and integration status.' }}</p></article>
-          <article><span class="method-index">02</span><h2>{{ t.howRegion }}</h2><p>{{ locale === 'fr' ? 'Choisissez une région prédéfinie ou dessinez une emprise sur la carte.' : 'Choose a predefined region or draw an area on the map.' }}</p></article>
-          <article><span class="method-index">03</span><h2>{{ t.howAnalyze }}</h2><p>{{ locale === 'fr' ? 'Consultez la pente, l’intervalle de confiance et les tests de significativité.' : 'Review the slope, confidence interval, and significance tests.' }}</p></article>
+          <article><div class="landing-step-top"><span class="landing-step-icon" aria-hidden="true">◈</span><span class="method-index">01</span></div><h3>{{ t.howChoose }}</h3><p>{{ t.howChooseText }}</p></article>
+          <article><div class="landing-step-top"><span class="landing-step-icon" aria-hidden="true">⌖</span><span class="method-index">02</span></div><h3>{{ t.howRegion }}</h3><p>{{ t.howRegionText }}</p></article>
+          <article><div class="landing-step-top"><span class="landing-step-icon" aria-hidden="true">↗</span><span class="method-index">03</span></div><h3>{{ t.howAnalyze }}</h3><p>{{ t.howAnalyzeText }}</p></article>
         </div>
       </section>
+
+      <section class="landing-section video-section">
+        <div class="landing-section-heading"><span class="eyebrow">{{ t.videoKicker }}</span><h2>{{ t.videoTitle }}</h2><p>{{ t.videoText }}</p></div>
+        <div class="video-placeholder">
+          <div class="video-placeholder-content"><span class="video-play" aria-hidden="true">▷</span><strong>{{ t.videoKicker }}</strong><button class="text-button" @click="showDemos = true">{{ t.guidedExamples }} →</button></div>
+        </div>
+      </section>
+
       <section class="landing-section ready-section">
-        <div class="section-heading"><div><span class="eyebrow">{{ t.inventory }}</span><h2>{{ locale === 'fr' ? 'Variables réellement intégrées' : 'Datasets actually integrated' }}</h2></div><button class="button secondary compact" @click="page = 'variables'">{{ t.variablesPage }} →</button></div>
+        <div class="landing-inventory-heading"><div><span class="eyebrow">{{ t.inventory }}</span><h2>{{ locale === 'fr' ? 'Variables vérifiées et prêtes' : 'Verified variables ready to explore' }}</h2></div><div class="landing-inventory-actions"><div class="inventory-count"><strong>{{ readyVariables.length }}</strong><span>{{ t.readyDatasets }}</span></div><button class="text-button" @click="page = 'variables'">{{ t.browseVariables }} →</button></div></div>
         <div class="ready-chips"><button v-for="item in readyVariables" :key="item.id" @click="openVariable(item.id)">{{ locale === 'fr' ? item.name_fr : item.name }} <span>· {{ item.unit }}</span></button></div>
       </section>
-      <footer class="landing-disclaimer"><span>ⓘ</span><p>{{ t.notOfficial }} {{ t.disclaimer }}</p></footer>
+
+      <footer class="landing-footer">
+        <div class="landing-footer-top"><a class="landing-footer-brand" href="#home" @click.prevent="page = 'home'"><span class="brand-mark" aria-hidden="true">◎</span><span>Earth Trend Detective</span></a><p>{{ t.notOfficial }} {{ t.footerNote }}</p></div>
+        <div class="landing-footer-links"><button @click="page = 'variables'">{{ t.footerExplore }} · {{ t.variablesPage }}</button><button @click="page = 'methods'">{{ t.footerScience }} · {{ t.methods }}</button><button @click="page = 'about'">{{ t.footerProject }} · {{ t.about }}</button></div>
+        <div class="landing-footer-bottom"><span>{{ t.footerSources }} · NASA GISS GISTEMP v4 and products listed in the catalogue</span><span>© 2026 Earth Trend Detective</span></div>
+      </footer>
     </main>
 
     <main v-else-if="page === 'variables'" class="content-page catalog-page">

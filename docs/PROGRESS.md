@@ -105,18 +105,19 @@ Updated: 2026-11-02
 - [x] Fixed the comparison variable selector: `/api/variables` already returns only analysis-ready products, while its response schema omits catalog `status`; the frontend no longer filters that response by the omitted field. Inventory requests now settle independently so a failed catalogue or region request does not discard ready variables.
 - [x] Comparison validation and API error messages render above the region selectors, next to the comparison controls.
 - [x] Integrated the supplied Stitch landing, variable catalogue, regional comparison, methods, about/credits, and export screens as application views. All dataset names, statuses, periods, sources, and DOI links are populated from the live API catalogue; comparison results and exports use the existing analysis endpoints.
+- [x] Reworked the landing page to follow the Stitch hierarchy: centered introduction and actions, a real GISTEMP global slope/stipple preview with API scale metadata, three consistently structured workflow cards, a clearly reserved video slot, live analysis-ready variable list, and a compact footer. Excluded the mockup's invented case-study metrics and unsupported trust claims.
 - [x] Added responsive navigation and single-column layouts for the new catalog, comparison, and landing screens on narrow viewports.
 - [x] Added plain-language p-value, confidence-interval, and significance explanations in English and French.
 - [x] Added English/French explanation for a non-significant result; demo dialog cites NASA GISTEMP and the verified Arctic-amplification paper.
 - [x] Deferred Hamed-Rao values from the MVP summary and main results; the advanced method remains documented and available in the API for the post-M8 interface.
 - [ ] Verify that the wizard's questions and answers form the required guided detective path, and that both required demos have checked sourced context and actual result verdicts.
 - [ ] Verify small-screen behavior and complete an actual browser walkthrough; these M6 acceptance checks remain outstanding.
-- [ ] M6 reste partiel jusqu'à ce que le premier produit en plus de GISTEMP soit analysable dans l'interface et que le parcours multi-variable soit vérifié dans un navigateur.
+- [ ] M6 reste partiel jusqu'à la vérification du parcours guidé, des exemples et du rendu mobile dans un navigateur.
 - [x] Added frontend utility tests for rate/p-value formatting and fitted-line display. Direct npm dependencies are pinned; Node/npm versions are specified in `.nvmrc` and `package.json`.
 - [x] `npm install` succeeded; direct dependencies are pinned and `web/package-lock.json` is available for reproducible installs.
 - [x] `npm test` passes (6 frontend tests); `npm run build` passes type-checking and production bundling.
 - [x] Local Vite and API are running. `GET /` and proxied `GET /api/variables` both returned HTTP 200.
-- [ ] Manual mobile/browser review remains outstanding. The local API health and catalog endpoints responded, but this session could not confirm the Vite listener from a separate shell; browser acceptance remains pending. Build reports a large JavaScript bundle (1.52 MB minified, 457 KB gzip); code splitting would improve first load.
+- [ ] Manual mobile/browser review remains outstanding. Build reports a large JavaScript bundle (1.53 MB minified, 459 KB gzip); code splitting would improve first load.
 
 ## M8 preparation and required access
 

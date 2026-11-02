@@ -536,6 +536,7 @@ onMounted(async () => {
 
     <main v-else-if="page === 'compare'" class="content-page compare-page">
       <div class="content-heading"><span class="eyebrow">{{ t.comparePage }}</span><h1>{{ t.compareTitle }}</h1><p>{{ t.compareIntro }}</p></div>
+      <div v-if="error" class="error-message compare-error" role="alert">{{ error }} <button class="text-button" :aria-label="t.close" :title="t.close" @click="error = ''">×</button></div>
       <div class="compare-controls">
         <label>{{ t.variable }}<select v-model="selectedVariable"><option v-for="item in readyVariables" :key="item.id" :value="item.id">{{ locale === 'fr' ? item.name_fr : item.name }}</option></select></label>
         <label>{{ t.regionA }}<select v-model="compareA"><option v-for="item in regions" :key="item.id" :value="item.id">{{ locale === 'fr' ? item.name_fr : item.name }}</option></select></label>
@@ -555,7 +556,6 @@ onMounted(async () => {
         </article>
       </div>
       <p v-if="comparison" class="compare-caveat">{{ t.compareCaveat }}</p>
-      <div v-if="error" class="error-message" role="alert">{{ error }} <button class="text-button" @click="error = ''">×</button></div>
     </main>
 
     <main v-if="page === 'explore'" class="workspace">
@@ -621,7 +621,7 @@ onMounted(async () => {
             <p class="plain-summary">{{ analysis.summary[locale] }}</p>
             <p v-if="!analysis.significant" class="period-note">{{ t.longerPeriod }}</p>
           </section>
-          <div v-if="error" class="error-message" role="alert">{{ error }} <button class="text-button" @click="error = ''">×</button></div>
+          <div v-if="error" class="error-message" role="alert">{{ error }} <button class="text-button" :aria-label="t.close" :title="t.close" @click="error = ''">×</button></div>
         </div>
         <footer class="panel-footer"><span class="source-dot"></span>{{ activeVariable?.source }} <a v-if="activeVariable?.doi" :href="`https://doi.org/${activeVariable.doi}`" target="_blank" rel="noreferrer">DOI ↗</a></footer>
       </aside>

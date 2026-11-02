@@ -2,7 +2,7 @@
 
 Updated: 2026-11-02
 
-## Current milestone: M1b — integration multi-variable (en cours)
+## Current milestone: M1b — intégration multi-variable (données et API locales prêtes)
 
 - [x] Read the full `AGENT_BRIEF.md`; section 1 bis governs scope and sequencing.
 - [x] Confirmed the GISTEMP v4 download page and selected gridded NetCDF product are published by NASA GISS. The official compressed file URL is `https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz`.
@@ -22,10 +22,13 @@ Updated: 2026-11-02
 - [x] Téléchargé et contrôlé le jeu GPM complet retourné par CMR : 309 granules mensuels (2000-01–2025-09), dont 121 récupérés après reprise ; 309 fichiers HDF5 validés, série sur grille 2° produite, tendances et cartes XYZ `full`, `2010-fin`, `2015-fin` générées. L'API signale GPM `analysis_ready`.
 - [x] Adaptateurs GPM mensuel et OMI quotidien-vers-mensuel ajoutés avec tests de grille, Fill, unités et dates ; l'agrégation OMI est préparée pour une série 2005–2014. Les téléchargements historiques et produits d'analyse OMI restent à exécuter.
 - [x] Approbation Earthdata vérifiée par téléchargement : le champ MERRA-2 `EVAP` (kg m-2 s-1) et le champ GLDAS `SoilMoi0_10cm_inst` (kg m-2) ont été lus dans de vrais fichiers NASA. Les téléchargements de 120 mois 2000–2009 sont en cours avec contrôle de chaque NetCDF avant inclusion.
-- [ ] OMI 2005–2014 : le transfert Earthaccess initial a bloqué sur des requêtes sans timeout après 811 fichiers valides. Le téléchargement reprend avec des délais bornés, quatre workers et reprise HTTP Range ; 123 granules supplémentaires ont été reçus (934 fichiers validés au total sur 3 646 granules), série mensuelle et cartes toujours en attente.
+- [x] OMI 2005–2014 : 3 646 granules `.he5` vérifiés, série mensuelle 120 mois, tendance globale et tuiles XYZ générées ; son statut API est `analysis_ready`.
 - [x] Tests d'adaptateurs MERRA-2/GLDAS : lecture de vrais noms de champs configurés, unité, masquage des Fill, grille cible et conservation des mois manquants couverts par tests synthétiques.
-- [x] Adaptateur AIRS3STM v7 écrit : champ vérifié `SurfAirTemp_A`, grille source 1° contrôlée et conversion sur la grille d'analyse 2°. Le guide NASA confirme l'unité K ; téléchargement mensuel 2002-09–2012-08 en cours (66/120 fichiers validés au dernier contrôle).
-- [ ] Les téléchargements MERRA-2 et GLDAS restent actifs mais lents : 23/120 et 15/120 fichiers mensuels validés au dernier contrôle ; générer Zarr, tendances et tuiles après réception.
+- [x] AIRS3STM v7 : 120/120 granules mensuels validés pour 2002-09–2012-08 ; Zarr, tendance et tuiles générés, statut API `analysis_ready`.
+- [x] MERRA-2 EVAP et GLDAS Noah soil moisture : 120/120 mois chacun pour 2000-01–2009-12 ; séries Zarr, tendances et tuiles générées. Le granule MERRA-2 2001-09 initialement tronqué a été repris par HTTPS authentifié puis validé ; les deux statuts API sont `analysis_ready`.
+- [x] `/api/variables` inclut désormais la métadonnée `windows` configurée pour MERRA-2, GLDAS, AIRS et OMI ; le contrat FastAPI ne rejette plus les nouveaux produits prêts. Tests API vérifient la cohérence entre catalogue et liste analysable.
+- [x] Parcours API régional exécuté sur les huit variables `analysis_ready` dans l'emprise Amazon : les huit réponses sont HTTP 200 avec séries et statistiques.
+- [x] Vérification locale complète après intégration : 46 tests Python et 6 tests frontend passent ; `npm run build` passe. L'interface répertorie huit produits analysables via `/api/variables`.
 - [x] `make test` ne peut pas démarrer dans ce bac à sable car uv écrit dans un cache utilisateur en lecture seule ; avant le nouveau test de reprise OMI, `.venv/bin/pytest -q` passait (43 tests) ; les tests OMI ciblés (4), les tests API ciblés (3), Ruff et `git diff --check` passent.
 - [x] Téléchargeur OMI remplacé par des requêtes authentifiées avec timeout de connexion/lecture, reprise des fragments validés par `Content-Range` et validation HDF-EOS après réception ; test de reprise ajouté.
 - [x] Le message du parcours qualité de l'air indique clairement que les données NASA OMI et les cartes ne sont pas encore prêtes. Correction du parcours Vue : une suggestion indisponible ne change plus la variable sélectionnée et le message n'est plus effacé par le watcher.
@@ -33,7 +36,7 @@ Updated: 2026-11-02
 
 ## Decisions and blockers
 
-- GISTEMP reste la seule variable activée dans l'interface jusqu'à ce que MODIS produise réellement sa série multi-annuelle, ses tendances et ses tuiles.
+- Les huit variables listées au catalogue sont analysables localement ; les fenêtres courtes MERRA-2, GLDAS, AIRS et OMI proposent uniquement `full`, conformément à leur période réellement acquise.
 - The project runtime is pinned to Python 3.11 (supported range 3.11–3.12); the current shell has Python 3.13, outside that project range.
 - NASA's current GISTEMP page exposes both a 2°×2° monthly anomaly NetCDF and compressed Zarr v3. The chosen source URL is the official NetCDF link; the live file has been downloaded and inspected.
 - No product `short_name` will be recorded for GISTEMP because it is retrieved from the official GISS public download, not CMR.
@@ -100,6 +103,7 @@ Updated: 2026-11-02
 - [x] Trend tiles preserve the native GISTEMP grid with nearest-neighbor display resampling, reduced overlay opacity, and transparent missing cells; stipple marks remain crisp. These are display choices only; statistical source values are unchanged.
 - [x] Regional comparison is now exposed in the frontend because comparing opposite regional trends is part of the official challenge scope (section 1 bis).
 - [x] Fixed the comparison variable selector: `/api/variables` already returns only analysis-ready products, while its response schema omits catalog `status`; the frontend no longer filters that response by the omitted field. Inventory requests now settle independently so a failed catalogue or region request does not discard ready variables.
+- [x] Comparison validation and API error messages render above the region selectors, next to the comparison controls.
 - [x] Integrated the supplied Stitch landing, variable catalogue, regional comparison, methods, about/credits, and export screens as application views. All dataset names, statuses, periods, sources, and DOI links are populated from the live API catalogue; comparison results and exports use the existing analysis endpoints.
 - [x] Added responsive navigation and single-column layouts for the new catalog, comparison, and landing screens on narrow viewports.
 - [x] Added plain-language p-value, confidence-interval, and significance explanations in English and French.
@@ -110,7 +114,7 @@ Updated: 2026-11-02
 - [ ] M6 reste partiel jusqu'à ce que le premier produit en plus de GISTEMP soit analysable dans l'interface et que le parcours multi-variable soit vérifié dans un navigateur.
 - [x] Added frontend utility tests for rate/p-value formatting and fitted-line display. Direct npm dependencies are pinned; Node/npm versions are specified in `.nvmrc` and `package.json`.
 - [x] `npm install` succeeded; direct dependencies are pinned and `web/package-lock.json` is available for reproducible installs.
-- [x] `npm test` passes (4 frontend utility tests); `npm run build` passes type-checking and production bundling.
+- [x] `npm test` passes (6 frontend tests); `npm run build` passes type-checking and production bundling.
 - [x] Local Vite and API are running. `GET /` and proxied `GET /api/variables` both returned HTTP 200.
 - [ ] Manual mobile/browser review remains outstanding. The local API health and catalog endpoints responded, but this session could not confirm the Vite listener from a separate shell; browser acceptance remains pending. Build reports a large JavaScript bundle (1.52 MB minified, 457 KB gzip); code splitting would improve first load.
 
@@ -131,5 +135,5 @@ Updated: 2026-11-02
 - M2, M3, M4, M5, and M6 are partial; do not describe them as accepted until the unchecked requirements above pass.
 - Milestone branches exist for M2, M4, M5, and M6; only the M0/M1 baseline is on `main`. Do not merge incomplete milestones.
 - M8 has not started: the brief requires a public host, domain, deployment access, open ports 80/443, and an HTTPS end-to-end check. No alternative host has been selected.
-- GISTEMP, MODIS NDVI/EVI, and GPM precipitation pass local data/trend/tile generation. OMI has a tested daily-to-monthly adapter and its 2005–2014 granule download is running; it remains unavailable for analysis until monthly products are generated.
+- GISTEMP, MODIS NDVI/EVI, GPM precipitation, MERRA-2 EVAP, GLDAS soil moisture, AIRS temperature, and OMI NO₂ all have local processed series, trend products, map tiles, and regional API responses. Manual frontend/browser acceptance and remote M8 deployment remain outstanding.
 - Do not start unrelated M7 extensions before M8. Regional comparison is included as a core challenge workflow; the advanced Rigorous result controls remain deferred.

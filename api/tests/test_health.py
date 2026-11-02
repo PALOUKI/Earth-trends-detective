@@ -37,6 +37,18 @@ def test_catalog_suggestions_and_regions_have_contract_fields() -> None:
     assert suggestions.json()[0]["available"] is (gpm["status"] == "analysis_ready")
 
 
+def test_analysis_variables_match_ready_catalog_records() -> None:
+    variables = _request("/api/variables")
+    catalog = _request("/api/catalog")
+
+    assert variables.status_code == catalog.status_code == 200
+    ready_ids = {
+        item["id"] for item in catalog.json() if item["status"] == "analysis_ready"
+    }
+    assert {item["id"] for item in variables.json()} == ready_ids
+    assert all(item["windows"] for item in variables.json())
+
+
 def test_catalog_distinguishes_ready_sample_and_access_blocked_products() -> None:
     response = _request("/api/catalog")
 
@@ -76,11 +88,16 @@ def test_catalog_distinguishes_ready_sample_and_access_blocked_products() -> Non
     }
 
 
-def test_air_quality_suggestion_explains_omi_is_still_downloading() -> None:
+def test_air_quality_suggestion_matches_omi_catalog_availability() -> None:
     response = _request("/api/suggest?theme=air")
+    product_response = _request("/api/catalog")
 
     assert response.status_code == 200
     suggestion = response.json()[0]
+    omi = next(item for item in product_response.json() if item["id"] == "omi_no2")
     assert suggestion["variable"] == "omi_no2"
-    assert suggestion["available"] is False
-    assert "being downloaded" in suggestion["message"]
+    assert suggestion["available"] is (omi["status"] == "analysis_ready")
+    if suggestion["available"]:
+        assert "Analyze" in suggestion["message"]
+    else:
+        assert suggestion["message"] == omi["status_detail"]

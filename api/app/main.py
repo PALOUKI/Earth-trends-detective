@@ -352,6 +352,8 @@ async def catalog() -> list[dict[str, object]]:
     records = [dict(item) for item in CATALOG]
     for item in records:
         config = VARIABLE_CONFIG.get(item["id"])
+        if config:
+            item.setdefault("windows", list(config["windows"]))
         if str(item["id"]).startswith("modis_"):
             raw_count = len(list(Path("data/raw/modis/mod13c2").glob("MOD13C2.A*.061.*.hdf")))
             if raw_count > 1:

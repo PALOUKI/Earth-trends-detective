@@ -126,7 +126,9 @@ select { padding-right: 28px; background-image: linear-gradient(45deg, transpare
 .chart-toggle button { min-height: 26px; font-size: 9px; }
 .chart { width: 100%; flex: 1; min-height: 120px; }
 .chart-footnote { color: #6a7685; font-size: 9px; line-height: 1.4; }
-.error-message { padding: 9px; border: 1px solid #f2c6c2; border-radius: 6px; color: #8f2421; background: #fff6f5; font-size: 10px; }
+.error-message { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border: 1px solid #f2c6c2; border-radius: 6px; color: #8f2421; background: #fff6f5; font-size: 10px; line-height: 1.45; }
+.error-message .text-button { display: grid; flex: 0 0 24px; place-items: center; width: 24px; height: 24px; margin-left: auto; padding: 0; border-radius: 4px; color: inherit; font-size: 17px; line-height: 1; text-decoration: none; }
+.error-message .text-button:hover { background: rgba(143, 36, 33, .08); }
 .content-page { width: min(960px, calc(100% - 40px)); margin: 0 auto; padding: 54px 0 70px; }
 .content-heading { max-width: 680px; }
 .content-heading h1, .about-page h1 { margin: 8px 0 8px; font-size: 30px; letter-spacing: -.035em; }

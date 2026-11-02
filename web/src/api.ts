@@ -56,6 +56,11 @@ export interface Analysis {
   caveats: string[]
 }
 
+export interface Comparison {
+  a: Analysis
+  b: Analysis
+}
+
 export interface MapLayer {
   slope_unit: string
   scale_min: number
@@ -96,6 +101,27 @@ export const api = {
   point: (variable: string, lat: number, lon: number, start?: string, end?: string) =>
     getJson<Analysis>(`/api/point?variable=${encodeURIComponent(variable)}&lat=${lat}&lon=${lon}${start ? `&start=${start}` : ''}${end ? `&end=${end}` : ''}`),
   map: (variable: string, window: string) => getJson<MapLayer>(`/api/trend/${encodeURIComponent(variable)}?window=${window}`),
+  compare: (variable: string, a: string, b: string) =>
+    getJson<Comparison>(`/api/compare?variable=${encodeURIComponent(variable)}&a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`),
+  exportUrl: (options: {
+    variable: string
+    format: 'csv' | 'png' | 'tif'
+    bounds?: [number, number, number, number]
+    window?: string
+    layer?: string
+  }) => {
+    const params = new URLSearchParams({ variable: options.variable, format: options.format })
+    if (options.bounds) {
+      const [west, south, east, north] = options.bounds
+      params.set('west', String(west))
+      params.set('south', String(south))
+      params.set('east', String(east))
+      params.set('north', String(north))
+    }
+    if (options.window) params.set('window', options.window)
+    if (options.layer) params.set('layer', options.layer)
+    return `${apiBase}/api/export?${params.toString()}`
+  },
 }
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {

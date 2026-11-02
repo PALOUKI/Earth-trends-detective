@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, ref, shallowRef, watch, type Ref } from 'vue'
+import { onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import maplibregl, { type Map as MapLibreMap, type MapMouseEvent } from 'maplibre-gl'
 import type { MapLayer } from './api'
 import { normalizeLongitude } from './trendUtils'
@@ -51,7 +51,7 @@ export function useMap(
       })
       instance.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': opacity } })
     }
-    addOrUpdateRaster('slope-overlay', layer.urls.slope, 0.38)
+    addOrUpdateRaster('slope-overlay', layer.urls.slope, 0.8)
     addOrUpdateRaster('significance-overlay', layer.urls.nonsignificant, 0.82)
   }
 
@@ -88,10 +88,10 @@ export function useMap(
     if (map.value) map.value.getCanvas().style.cursor = ''
   }
 
-  onMounted(() => {
-    if (!element.value) return
+  watch(element, (container) => {
+    if (!container || map.value) return
     const instance = new maplibregl.Map({
-      container: element.value,
+      container,
       style: blankStyle,
       center: [5, 12],
       zoom: 1.35,
@@ -134,11 +134,18 @@ export function useMap(
       if (bounds[0] !== bounds[2] && bounds[1] !== bounds[3]) onRegion(bounds)
     })
     map.value = instance
-  })
+  }, { immediate: true, flush: 'post' })
 
   watch(selectedLayer, (layer) => {
     const instance = map.value
-    if (!instance || !layer) return
+    if (!instance) return
+    if (!layer) {
+      for (const id of ['significance-overlay', 'slope-overlay']) {
+        if (instance.getLayer(id)) instance.removeLayer(id)
+        if (instance.getSource(id)) instance.removeSource(id)
+      }
+      return
+    }
     if (instance.isStyleLoaded()) applyTrendLayers(instance, layer)
     else instance.once('load', () => applyTrendLayers(instance, layer))
   }, { immediate: true })

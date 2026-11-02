@@ -4,7 +4,7 @@ import { use } from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
-import type { Analysis, MapLayer, RegionInfo, VariableInfo } from './api'
+import type { Analysis, Comparison, MapLayer, RegionInfo, VariableInfo } from './api'
 import { api } from './api'
 import { fittedLine, formatPValue, formatRate } from './trendUtils'
 import { useMap } from './useMap'
@@ -13,10 +13,26 @@ use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent
 
 type Locale = 'en' | 'fr'
 type WindowId = 'full' | '2010-fin' | '2015-fin'
-type AppPage = 'explore' | 'methods' | 'about'
+type AppPage = 'home' | 'explore' | 'variables' | 'compare' | 'methods' | 'about'
 
 const copy = {
   en: {
+    home: 'Home', variablesPage: 'Variables', comparePage: 'Compare',
+    homeTitle: 'Find out what is changing on Earth',
+    homeLead: 'Choose a NASA Earth science variable and a place. Explore its monthly record, estimate the rate of change, and check the statistical evidence.',
+    startInvestigation: 'Start an investigation', browseVariables: 'Browse verified variables',
+    howTitle: 'From question to evidence', howChoose: 'Choose a measured variable',
+    howRegion: 'Select a region', howAnalyze: 'Inspect the time series and trend tests',
+    inventory: 'Verified data inventory', readyDatasets: 'analysis-ready datasets',
+    processingDatasets: 'in progress', variableSearch: 'Search verified variables', allStatuses: 'All statuses',
+    readyStatus: 'Analysis ready', compareTitle: 'Compare two regions',
+    compareIntro: 'Use the same available variable and full record for both regions. Results are calculated from their actual processed series.',
+    regionA: 'Region A', regionB: 'Region B', runCompare: 'Compare regions', rateA: 'Region A rate', rateB: 'Region B rate',
+    compareCaveat: 'Differences describe the selected regional averages. They do not establish a cause.',
+    exportTitle: 'Export real analysis products', exportCSV: 'Regional monthly series (CSV)',
+    exportPNG: 'Precomputed trend map (PNG)', exportTIF: 'Trend grid (GeoTIFF)',
+    exportNote: 'Exports use the selected processed dataset. Map files are available only when generated.',
+    notOfficial: 'Independent project; not an official NASA product.',
     explore: 'Explore', methods: 'Methods & validation', about: 'About', lang: 'Français',
     parameters: 'Analysis parameters', dataset: 'DATASET', variable: 'Variable',
     accessBlocked: 'Access authorization pending', sampleOnly: 'Sample acquired; trend analysis pending',
@@ -58,6 +74,22 @@ const copy = {
     slopeLayer: 'OLS slope', nonsignificantLayer: 'dots = not significant', observations: 'months',
   },
   fr: {
+    home: 'Accueil', variablesPage: 'Variables', comparePage: 'Comparer',
+    homeTitle: 'Découvrir ce qui change sur Terre',
+    homeLead: 'Choisissez une variable NASA et un lieu. Explorez sa série mensuelle, estimez le rythme de changement et consultez les tests statistiques.',
+    startInvestigation: 'Commencer une enquête', browseVariables: 'Voir les variables vérifiées',
+    howTitle: 'De la question aux résultats', howChoose: 'Choisir une variable mesurée',
+    howRegion: 'Sélectionner une région', howAnalyze: 'Examiner la série et les tests de tendance',
+    inventory: 'Catalogue réel des données', readyDatasets: 'variables analysables',
+    processingDatasets: 'en cours', variableSearch: 'Rechercher une variable vérifiée', allStatuses: 'Tous les états',
+    readyStatus: 'Analyse disponible', compareTitle: 'Comparer deux régions',
+    compareIntro: 'Une même variable et toute la période disponible sont utilisées dans les deux régions. Les résultats sont calculés à partir des séries traitées.',
+    regionA: 'Région A', regionB: 'Région B', runCompare: 'Comparer les régions', rateA: 'Taux région A', rateB: 'Taux région B',
+    compareCaveat: 'Les différences décrivent les moyennes régionales choisies ; elles ne démontrent pas une cause.',
+    exportTitle: 'Exporter les résultats calculés', exportCSV: 'Série mensuelle régionale (CSV)',
+    exportPNG: 'Carte de tendance précalculée (PNG)', exportTIF: 'Grille de tendance (GeoTIFF)',
+    exportNote: 'Les exports utilisent les données traitées sélectionnées. Les cartes sont disponibles uniquement si elles ont été générées.',
+    notOfficial: 'Projet indépendant ; ce n’est pas un produit officiel de la NASA.',
     explore: 'Explorer', methods: 'Méthodes et validation', about: 'À propos', lang: 'English',
     parameters: 'Paramètres d’analyse', dataset: 'JEU DE DONNÉES', variable: 'Variable',
     accessBlocked: 'Autorisation d’accès en attente', sampleOnly: 'Échantillon acquis ; analyse en attente',
@@ -100,14 +132,17 @@ const copy = {
   },
 } as const
 
-const locale = ref<Locale>('en')
+const locale = ref<Locale>('fr')
 const t = computed(() => copy[locale.value])
-const page = ref<AppPage>('explore')
+const page = ref<AppPage>('home')
 const mapElement = ref<HTMLElement | null>(null)
 const mapLayer = ref<MapLayer | null>(null)
 const mapWindow = ref<WindowId>('full')
 const variables = ref<VariableInfo[]>([])
 const catalogVariables = ref<VariableInfo[]>([])
+const readyVariables = computed(() => variables.value.filter((item) => item.status === 'analysis_ready'))
+const catalogSearch = ref('')
+const catalogStatus = ref('all')
 const selectedVariable = ref('gistemp_tas_anom')
 const wizardTheme = ref('climate')
 const activeVariable = computed(() => catalogVariables.value.find((item) => item.id === selectedVariable.value) ?? variables.value[0])
@@ -118,6 +153,11 @@ const wizardVariableId = computed(() => ({
 const wizardVariable = computed(() => catalogVariables.value.find((item) => item.id === wizardVariableId.value) ?? variables.value[0])
 const wizardVariableReady = computed(() => variables.value.some((item) => item.id === wizardVariableId.value))
 const isAnalysisReady = computed(() => activeVariable.value?.status === 'analysis_ready')
+const filteredCatalog = computed(() => catalogVariables.value.filter((item) => {
+  const query = catalogSearch.value.toLowerCase()
+  const matchesText = `${item.name} ${item.name_fr} ${item.source ?? ''} ${item.short_name ?? ''}`.toLowerCase().includes(query)
+  return matchesText && (catalogStatus.value === 'all' || item.status === catalogStatus.value)
+}))
 const regions = ref<RegionInfo[]>([])
 const regionId = ref('amazon')
 const selectedBounds = ref<[number, number, number, number]>([-75, -15, -45, 5])
@@ -128,13 +168,30 @@ const analysis = ref<Analysis | null>(null)
 const loading = ref(false)
 const mapLoading = ref(false)
 const error = ref('')
-const showWizard = ref(true)
+const comparing = ref(false)
+const comparison = ref<Comparison | null>(null)
+const compareA = ref('amazon')
+const compareB = ref('sahara')
+const showExport = ref(false)
+const showWizard = ref(false)
 const wizardStep = ref(1)
 const wizardPlace = ref('Amazon')
 const showDemos = ref(false)
 const demoStep = ref(0)
 const activeDemo = ref('')
 const chartMode = ref<'anomaly' | 'raw'>('anomaly')
+
+const comparisonOptionA = computed(() => comparison.value ? comparisonChartOption(comparison.value.a) : {})
+const comparisonOptionB = computed(() => comparison.value ? comparisonChartOption(comparison.value.b) : {})
+const regionalCsvUrl = computed(() => api.exportUrl({
+  variable: selectedVariable.value, format: 'csv', bounds: selectedBounds.value,
+}))
+const slopePngUrl = computed(() => api.exportUrl({
+  variable: selectedVariable.value, format: 'png', window: mapWindow.value, layer: 'slope',
+}))
+const trendTifUrl = computed(() => api.exportUrl({
+  variable: selectedVariable.value, format: 'tif', window: mapWindow.value,
+}))
 
 const periodStart: Record<WindowId, string | undefined> = {
   full: undefined,
@@ -163,6 +220,58 @@ const chartOption = computed(() => {
     ],
   }
 })
+
+function comparisonChartOption(result: Analysis) {
+  return {
+    animation: false,
+    color: ['#0b3d91'],
+    grid: { left: 45, right: 12, top: 18, bottom: 28 },
+    tooltip: { trigger: 'axis' },
+    xAxis: { type: 'category', data: result.time, axisLabel: { hideOverlap: true } },
+    yAxis: { type: 'value', name: result.unit },
+    series: [{ type: 'line', showSymbol: false, connectNulls: false, data: result.anomaly }],
+  }
+}
+
+async function runComparison() {
+  if (compareA.value === compareB.value) {
+    error.value = locale.value === 'fr' ? 'Choisissez deux régions différentes.' : 'Choose two different regions.'
+    return
+  }
+  comparing.value = true
+  comparison.value = null
+  error.value = ''
+  try {
+    comparison.value = await api.compare(selectedVariable.value, compareA.value, compareB.value)
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : String(caught)
+  } finally {
+    comparing.value = false
+  }
+}
+
+function openVariable(variable: string) {
+  const item = catalogVariables.value.find((candidate) => candidate.id === variable)
+  if (!item) return
+  if (item.status !== 'analysis_ready') {
+    error.value = item.id === 'omi_no2' ? t.value.qualityPending : item.status_detail ?? t.value.variablePending
+    return
+  }
+  selectedVariable.value = variable
+  page.value = 'explore'
+}
+
+function statusLabel(status?: string) {
+  const english: Record<string, string> = {
+    analysis_ready: 'Analysis ready', sample_downloaded: 'Sample only',
+    acquiring: 'Acquiring data', series_processed: 'Preparing maps', blocked_eula: 'Access pending',
+  }
+  const french: Record<string, string> = {
+    analysis_ready: 'Analyse disponible', sample_downloaded: 'Échantillon seulement',
+    acquiring: 'Acquisition en cours', series_processed: 'Cartes à préparer', blocked_eula: 'Accès en attente',
+  }
+  return (locale.value === 'fr' ? french : english)[status ?? ''] ?? status ?? ''
+}
 
 const statusText = computed(() => {
   if (!analysis.value || analysis.value.trend.n_valid < 36) return t.value.insufficient
@@ -346,21 +455,91 @@ onMounted(async () => {
 <template>
   <div class="app-shell">
     <header class="topbar">
-      <a class="brand" href="#explore" @click.prevent="page = 'explore'">
+      <a class="brand" href="#home" @click.prevent="page = 'home'">
         <span class="brand-mark" aria-hidden="true">◎</span>
         <span class="brand-name">Earth Trend Detective</span>
         <span class="brand-tag">NASA EARTH SCIENCE</span>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
+        <button :class="{ active: page === 'home' }" @click="page = 'home'">{{ t.home }}</button>
         <button :class="{ active: page === 'explore' }" @click="page = 'explore'">{{ t.explore }}</button>
+        <button :class="{ active: page === 'variables' }" @click="page = 'variables'">{{ t.variablesPage }}</button>
+        <button :class="{ active: page === 'compare' }" @click="page = 'compare'">{{ t.comparePage }}</button>
         <button :class="{ active: page === 'methods' }" @click="page = 'methods'">{{ t.methods }}</button>
         <button :class="{ active: page === 'about' }" @click="page = 'about'">{{ t.about }}</button>
       </nav>
       <div class="top-actions">
         <button class="language-toggle" :aria-label="`Switch language to ${t.lang}`" @click="locale = locale === 'en' ? 'fr' : 'en'">{{ locale.toUpperCase() }}</button>
+        <button v-if="page === 'explore' && isAnalysisReady" class="button secondary compact" @click="showExport = true">↓ <span>Export</span></button>
         <button class="button secondary compact" @click="showDemos = true">▶ <span>{{ t.demo }}</span></button>
       </div>
     </header>
+
+    <main v-if="page === 'home'" class="home-page">
+      <section class="landing-hero">
+        <span class="eyebrow">NASA EARTH SCIENCE · DATA TRENDS</span>
+        <h1>{{ t.homeTitle }}</h1>
+        <p>{{ t.homeLead }}</p>
+        <div class="landing-actions">
+          <button class="button primary" @click="page = 'explore'; beginWizard()">{{ t.startInvestigation }} →</button>
+          <button class="button secondary" @click="page = 'variables'">{{ t.browseVariables }}</button>
+        </div>
+        <div class="landing-inventory" aria-live="polite">
+          <strong>{{ readyVariables.length }}</strong><span>{{ t.readyDatasets }}</span>
+          <i></i><strong>{{ catalogVariables.filter((item) => item.status !== 'analysis_ready').length }}</strong><span>{{ t.processingDatasets }}</span>
+        </div>
+      </section>
+      <section class="landing-section">
+        <div class="section-heading"><span class="eyebrow">{{ t.howTitle }}</span><button class="text-button" @click="page = 'methods'">{{ t.methods }} →</button></div>
+        <div class="landing-steps">
+          <article><span class="method-index">01</span><h2>{{ t.howChoose }}</h2><p>{{ locale === 'fr' ? 'Les jeux NASA sont listés avec leur source, période, unité et état d’intégration.' : 'NASA datasets are listed with source, period, unit, and integration status.' }}</p></article>
+          <article><span class="method-index">02</span><h2>{{ t.howRegion }}</h2><p>{{ locale === 'fr' ? 'Choisissez une région prédéfinie ou dessinez une emprise sur la carte.' : 'Choose a predefined region or draw an area on the map.' }}</p></article>
+          <article><span class="method-index">03</span><h2>{{ t.howAnalyze }}</h2><p>{{ locale === 'fr' ? 'Consultez la pente, l’intervalle de confiance et les tests de significativité.' : 'Review the slope, confidence interval, and significance tests.' }}</p></article>
+        </div>
+      </section>
+      <section class="landing-section ready-section">
+        <div class="section-heading"><div><span class="eyebrow">{{ t.inventory }}</span><h2>{{ locale === 'fr' ? 'Variables réellement intégrées' : 'Datasets actually integrated' }}</h2></div><button class="button secondary compact" @click="page = 'variables'">{{ t.variablesPage }} →</button></div>
+        <div class="ready-chips"><button v-for="item in readyVariables" :key="item.id" @click="openVariable(item.id)">{{ locale === 'fr' ? item.name_fr : item.name }} <span>· {{ item.unit }}</span></button></div>
+      </section>
+      <footer class="landing-disclaimer"><span>ⓘ</span><p>{{ t.notOfficial }} {{ t.disclaimer }}</p></footer>
+    </main>
+
+    <main v-else-if="page === 'variables'" class="content-page catalog-page">
+      <div class="content-heading"><span class="eyebrow">{{ t.inventory }}</span><h1>{{ locale === 'fr' ? 'Variables de sciences de la Terre' : 'Earth science variables' }}</h1><p>{{ locale === 'fr' ? 'Ce catalogue est alimenté par les enregistrements de données du projet. Les jeux en cours d’acquisition restent indisponibles pour l’analyse.' : 'This catalogue is populated from the project data records. Datasets still being acquired cannot yet be analyzed.' }}</p></div>
+      <div class="catalog-controls"><input v-model="catalogSearch" class="text-input" type="search" :placeholder="t.variableSearch" /><select v-model="catalogStatus" :aria-label="t.allStatuses"><option value="all">{{ t.allStatuses }}</option><option value="analysis_ready">{{ t.readyStatus }}</option><option value="acquiring">{{ statusLabel('acquiring') }}</option><option value="sample_downloaded">{{ statusLabel('sample_downloaded') }}</option><option value="series_processed">{{ statusLabel('series_processed') }}</option><option value="blocked_eula">{{ statusLabel('blocked_eula') }}</option></select></div>
+      <div class="catalog-grid">
+        <article v-for="item in filteredCatalog" :key="item.id" class="catalog-card">
+          <div class="catalog-card-top"><span class="eyebrow">{{ item.short_name ?? item.source }}</span><span class="status-badge" :class="item.status === 'analysis_ready' ? 'status-ready' : 'status-pending'">{{ statusLabel(item.status) }}</span></div>
+          <h2>{{ locale === 'fr' ? item.name_fr : item.name }}</h2><p>{{ locale === 'fr' ? item.definition_fr : item.definition }}</p>
+          <dl><div><dt>{{ locale === 'fr' ? 'Période' : 'Period' }}</dt><dd>{{ item.period }}</dd></div><div><dt>{{ locale === 'fr' ? 'Unité' : 'Unit' }}</dt><dd>{{ item.unit }}</dd></div><div><dt>{{ locale === 'fr' ? 'Source' : 'Source' }}</dt><dd>{{ item.source }}</dd></div></dl>
+          <p v-if="item.status !== 'analysis_ready'" class="catalog-pending">{{ item.id === 'omi_no2' ? t.qualityPending : item.status_detail }}</p>
+          <div class="catalog-actions"><a v-if="item.doi" :href="`https://doi.org/${item.doi}`" target="_blank" rel="noreferrer">DOI ↗</a><button class="button compact" :class="item.status === 'analysis_ready' ? 'primary' : 'secondary'" :disabled="item.status !== 'analysis_ready'" @click="openVariable(item.id)">{{ item.status === 'analysis_ready' ? t.explore : statusLabel(item.status) }}</button></div>
+        </article>
+        <p v-if="filteredCatalog.length === 0" class="empty-catalog">{{ locale === 'fr' ? 'Aucune variable ne correspond à cette recherche.' : 'No variables match this search.' }}</p>
+      </div>
+    </main>
+
+    <main v-else-if="page === 'compare'" class="content-page compare-page">
+      <div class="content-heading"><span class="eyebrow">{{ t.comparePage }}</span><h1>{{ t.compareTitle }}</h1><p>{{ t.compareIntro }}</p></div>
+      <div class="compare-controls">
+        <label>{{ t.variable }}<select v-model="selectedVariable"><option v-for="item in readyVariables" :key="item.id" :value="item.id">{{ locale === 'fr' ? item.name_fr : item.name }}</option></select></label>
+        <label>{{ t.regionA }}<select v-model="compareA"><option v-for="item in regions" :key="item.id" :value="item.id">{{ locale === 'fr' ? item.name_fr : item.name }}</option></select></label>
+        <label>{{ t.regionB }}<select v-model="compareB"><option v-for="item in regions" :key="item.id" :value="item.id">{{ locale === 'fr' ? item.name_fr : item.name }}</option></select></label>
+        <button class="button primary" :disabled="comparing || !readyVariables.length" @click="runComparison">{{ comparing ? t.loading : t.runCompare }}</button>
+      </div>
+      <div v-if="comparison" class="comparison-grid">
+        <article v-for="(result, index) in [comparison.a, comparison.b]" :key="index" class="comparison-card">
+          <span class="eyebrow">{{ index === 0 ? t.regionA : t.regionB }} · {{ result.period.start }} — {{ result.period.end }}</span>
+          <h2>{{ result.label }}</h2><span class="verdict" :class="result.significant ? 'good' : 'caution'">{{ result.significant ? t.significant : t.notSignificant }}</span>
+          <div class="rate-value">{{ formatRate(result.trend.slope_ols, result.rate_unit) }}</div><div class="rate-label">{{ t.rate }}</div>
+          <p>{{ result.summary[locale] }}</p>
+          <VChart class="comparison-chart" :option="index === 0 ? comparisonOptionA : comparisonOptionB" autoresize />
+          <p class="chart-footnote">{{ result.trend.n_valid }} {{ t.observations }} · p (OLS) {{ formatPValue(result.trend.p_ols) }}</p>
+        </article>
+      </div>
+      <p v-if="comparison" class="compare-caveat">{{ t.compareCaveat }}</p>
+      <div v-if="error" class="error-message" role="alert">{{ error }} <button class="text-button" @click="error = ''">×</button></div>
+    </main>
 
     <main v-if="page === 'explore'" class="workspace">
       <aside class="control-panel">
@@ -452,7 +631,7 @@ onMounted(async () => {
       </section>
     </main>
 
-    <main v-else-if="page === 'methods'" class="content-page">
+    <main v-if="page === 'methods'" class="content-page">
       <div class="content-heading"><span class="eyebrow">SCIENTIFIC TRANSPARENCY</span><h1>{{ t.methods }}</h1><p>{{ t.methodsIntro }}</p></div>
       <div class="method-grid">
         <article><span class="method-index">01</span><h2>{{ t.ols }}</h2><p>{{ t.m1 }}</p><span class="method-formula">y = a + bt · rate unit follows variable · 95% CI</span></article>
@@ -463,10 +642,21 @@ onMounted(async () => {
       <article class="validation-card"><h2>{{ t.limitations }}</h2><p>{{ activeVariable?.limitations }}</p><p>{{ t.disclaimer }}</p></article>
     </main>
 
-    <main v-else class="content-page about-page">
+    <main v-if="page === 'about'" class="content-page about-page">
       <span class="brand-mark large" aria-hidden="true">◎</span><h1>{{ t.aboutTitle }}</h1><p>{{ t.aboutText }}</p>
-      <section class="validation-card"><h2>{{ t.data }}</h2><p>NASA GISS GISTEMP v4 · Land–Ocean Temperature Index · ERSSTv5 · 2° grid.</p><a href="https://data.giss.nasa.gov/gistemp/" target="_blank" rel="noreferrer">NASA GISS GISTEMP ↗</a><p>Lenssen et al. (2024), DOI: 10.1029/2023JD040179.</p></section>
+      <section class="validation-card"><h2>{{ t.notOfficial }}</h2><p>{{ locale === 'fr' ? 'L’application calcule des tendances descriptives sur les séries NASA prétraitées. Elle ne fournit ni prévision ni attribution causale.' : 'The application calculates descriptive trends from processed NASA records. It does not provide forecasts or causal attribution.' }}</p><p>{{ t.disclaimer }}</p></section>
+      <section class="validation-card"><h2>{{ t.data }} · NASA</h2><ul class="credits-list"><li v-for="item in catalogVariables" :key="item.id"><span>{{ locale === 'fr' ? item.name_fr : item.name }} · {{ item.source }} <small>({{ statusLabel(item.status) }})</small></span><a v-if="item.doi" :href="`https://doi.org/${item.doi}`" target="_blank" rel="noreferrer">{{ item.doi }} ↗</a></li></ul><a href="https://data.giss.nasa.gov/gistemp/data_v4.html" target="_blank" rel="noreferrer">NASA GISTEMP v4 source ↗</a></section>
     </main>
+
+    <div v-if="showExport" class="modal-backdrop" role="presentation" @click.self="showExport = false">
+      <section class="dialog export-dialog" role="dialog" aria-modal="true" aria-labelledby="export-title">
+        <div class="dialog-top"><div><span class="eyebrow">{{ t.exportTitle }}</span><h2 id="export-title">{{ locale === 'fr' ? (activeVariable?.name_fr ?? '') : (activeVariable?.name ?? '') }}</h2></div><button class="icon-button" :aria-label="t.close" @click="showExport = false">×</button></div>
+        <p class="dialog-note">{{ analysis?.period.start }} — {{ analysis?.period.end }} · {{ selectedLabel }} · {{ activeVariable?.unit }}</p>
+        <a class="export-option" :href="regionalCsvUrl"><span><strong>{{ t.exportCSV }}</strong><small>{{ locale === 'fr' ? 'Valeurs observées, cycle saisonnier et anomalies de la région choisie.' : 'Observed values, seasonal cycle, and anomalies for the selected region.' }}</small></span><b>CSV ↓</b></a>
+        <a class="export-option" :href="slopePngUrl"><span><strong>{{ t.exportPNG }}</strong><small>{{ locale === 'fr' ? 'Carte de pente précalculée pour la variable et la fenêtre sélectionnées.' : 'Precomputed slope map for the selected variable and window.' }}</small></span><b>PNG ↓</b></a>
+        <a class="export-option" :href="trendTifUrl"><span><strong>{{ t.exportTIF }}</strong><small>{{ t.exportNote }}</small></span><b>TIFF ↓</b></a>
+      </section>
+    </div>
 
     <div v-if="showWizard" class="modal-backdrop" role="presentation" @click.self="showWizard = false">
       <section class="dialog wizard-dialog" role="dialog" aria-modal="true" aria-labelledby="wizard-title">

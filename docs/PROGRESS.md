@@ -1,6 +1,6 @@
 # Project progress
 
-Updated: 2026-11-01
+Updated: 2026-11-02
 
 ## Current milestone: M1b — integration multi-variable (en cours)
 
@@ -98,7 +98,9 @@ Updated: 2026-11-01
 - [x] Ajout d'un sélecteur issu du catalogue vérifié ; les variables ont un état explicite et restent non sélectionnables tant que leurs traitements et cartes ne sont pas disponibles. Les appels région/point/carte transmettent maintenant l'identifiant de variable.
 - [x] Replaced the dated MODIS true-color base image with GIBS `BlueMarble_NextGeneration`, verified in the live WMTS capabilities and by a real HTTP 200 tile request; GIBS remains geographic background imagery only.
 - [x] Trend tiles preserve the native GISTEMP grid with nearest-neighbor display resampling, reduced overlay opacity, and transparent missing cells; stipple marks remain crisp. These are display choices only; statistical source values are unchanged.
-- [x] Removed the M7 comparison control from the frontend before deployment; the comparison API route remains because section 12 lists it as an M5 endpoint.
+- [x] Regional comparison is now exposed in the frontend because comparing opposite regional trends is part of the official challenge scope (section 1 bis).
+- [x] Integrated the supplied Stitch landing, variable catalogue, regional comparison, methods, about/credits, and export screens as application views. All dataset names, statuses, periods, sources, and DOI links are populated from the live API catalogue; comparison results and exports use the existing analysis endpoints.
+- [x] Added responsive navigation and single-column layouts for the new catalog, comparison, and landing screens on narrow viewports.
 - [x] Added plain-language p-value, confidence-interval, and significance explanations in English and French.
 - [x] Added English/French explanation for a non-significant result; demo dialog cites NASA GISTEMP and the verified Arctic-amplification paper.
 - [x] Deferred Hamed-Rao values from the MVP summary and main results; the advanced method remains documented and available in the API for the post-M8 interface.
@@ -109,7 +111,7 @@ Updated: 2026-11-01
 - [x] `npm install` succeeded; direct dependencies are pinned and `web/package-lock.json` is available for reproducible installs.
 - [x] `npm test` passes (4 frontend utility tests); `npm run build` passes type-checking and production bundling.
 - [x] Local Vite and API are running. `GET /` and proxied `GET /api/variables` both returned HTTP 200.
-- [ ] Manual mobile/browser review remains outstanding. Build reports a large JavaScript bundle (1.50 MB minified, 452 KB gzip); code splitting would improve first load.
+- [ ] Manual mobile/browser review remains outstanding. The local API health and catalog endpoints responded, but this session could not confirm the Vite listener from a separate shell; browser acceptance remains pending. Build reports a large JavaScript bundle (1.52 MB minified, 457 KB gzip); code splitting would improve first load.
 
 ## M8 preparation and required access
 
@@ -129,4 +131,4 @@ Updated: 2026-11-01
 - Milestone branches exist for M2, M4, M5, and M6; only the M0/M1 baseline is on `main`. Do not merge incomplete milestones.
 - M8 has not started: the brief requires a public host, domain, deployment access, open ports 80/443, and an HTTPS end-to-end check. No alternative host has been selected.
 - GISTEMP, MODIS NDVI/EVI, and GPM precipitation pass local data/trend/tile generation. OMI has a tested daily-to-monthly adapter and its 2005–2014 granule download is running; it remains unavailable for analysis until monthly products are generated.
-- Do not start or extend M7 before M8. The comparison and Rigorous result controls are not shown in the MVP frontend.
+- Do not start unrelated M7 extensions before M8. Regional comparison is included as a core challenge workflow; the advanced Rigorous result controls remain deferred.

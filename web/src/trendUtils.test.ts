@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fittedLine, formatPValue, formatRate, normalizeLongitude } from './trendUtils'
+import { comparisonDirection, fittedLine, formatPValue, formatRate, normalizeLongitude, stepMapZoom } from './trendUtils'
 
 describe('trend display helpers', () => {
   it('formats K/year slopes as signed K/decade rates', () => {
@@ -25,5 +25,20 @@ describe('trend display helpers', () => {
     expect(normalizeLongitude(256)).toBe(-104)
     expect(normalizeLongitude(180)).toBe(-180)
     expect(normalizeLongitude(-181)).toBe(179)
+  })
+
+  it('summarizes estimated regional trend directions without inferring causes', () => {
+    expect(comparisonDirection(0.02, -0.01)).toBe('opposite')
+    expect(comparisonDirection(0.02, 0.01)).toBe('same_up')
+    expect(comparisonDirection(-0.02, -0.01)).toBe('same_down')
+    expect(comparisonDirection(0, -0.01)).toBe('flat')
+    expect(comparisonDirection(null, 0.01)).toBe('insufficient')
+  })
+
+  it('keeps landing map zoom between its global and maximum views', () => {
+    expect(stepMapZoom(1, -1)).toBe(1)
+    expect(stepMapZoom(1, 1)).toBe(1.25)
+    expect(stepMapZoom(3, 1)).toBe(3)
+    expect(stepMapZoom(3, -1)).toBe(2.75)
   })
 })

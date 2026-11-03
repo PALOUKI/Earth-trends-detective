@@ -64,10 +64,14 @@ def test_region_endpoint_returns_trend_summary_from_data(tmp_path, monkeypatch) 
     assert response.status_code == 200
     assert payload["trend"]["n_valid"] == 120
     assert payload["trend"]["slope_ols"] > 0
+    assert payload["trend"]["slope"] is not None
+    assert payload["trend"]["p_mk"] is not None
+    assert payload["trend"]["p_value"] is not None
     assert set(payload["summary"]) == {"en", "fr"}
     assert payload["variable"] == "gistemp_tas_anom"
     assert "break" in payload
     assert payload["break"]["date"] in payload["time"]
+    assert {"date", "p", "significant", "statistic"} <= set(payload["break"])
     assert point.status_code == 200
     assert point.json()["location"] == {"lat": -1.0, "lon": -1.0}
     assert point.json()["period"] == {"start": "2000-01", "end": "2009-12"}

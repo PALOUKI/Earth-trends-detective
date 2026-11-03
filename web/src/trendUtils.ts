@@ -14,6 +14,21 @@ export function normalizeLongitude(longitude: number): number {
   return ((longitude + 180) % 360 + 360) % 360 - 180
 }
 
+export function comparisonDirection(slopeA: number | null, slopeB: number | null): 'opposite' | 'same_up' | 'same_down' | 'flat' | 'insufficient' {
+  if (slopeA === null || slopeB === null || !Number.isFinite(slopeA) || !Number.isFinite(slopeB)) return 'insufficient'
+  const directionA = Math.sign(slopeA)
+  const directionB = Math.sign(slopeB)
+  if (directionA === 0 || directionB === 0) return 'flat'
+  if (directionA !== directionB) return 'opposite'
+  if (directionA > 0) return 'same_up'
+  if (directionA < 0) return 'same_down'
+  return 'flat'
+}
+
+export function stepMapZoom(zoom: number, direction: -1 | 1): number {
+  return Math.min(3, Math.max(1, Number((zoom + direction * 0.25).toFixed(2))))
+}
+
 export function fittedLine(values: Array<number | null>, slopePerYear: number | null) {
   if (slopePerYear === null || !Number.isFinite(slopePerYear)) return values.map(() => null)
   const valid = values.flatMap((value, index) =>

@@ -26,6 +26,10 @@ const blankStyle = {
 export function useMap(
   element: Ref<HTMLElement | null>,
   selectedLayer: Ref<MapLayer | null>,
+  selectedBounds: Ref<[number, number, number, number]>,
+  slopeVisible: Ref<boolean>,
+  significanceVisible: Ref<boolean>,
+  slopeOpacity: Ref<number>,
   onPoint: (lat: number, lon: number) => void,
   onRegion: (bounds: [number, number, number, number]) => void,
 ) {
@@ -34,25 +38,36 @@ export function useMap(
   let dragStart: [number, number] | null = null
   let ignoreNextClick = false
 
+  function moveSelectedRegionToFront(instance: MapLibreMap) {
+    if (instance.getLayer('selected-region-fill')) instance.moveLayer('selected-region-fill')
+    if (instance.getLayer('selected-region-line')) instance.moveLayer('selected-region-line')
+  }
+
   function applyTrendLayers(instance: MapLibreMap, layer: MapLayer) {
-    const addOrUpdateRaster = (id: string, url: string, opacity: number) => {
+    const addOrUpdateRaster = (id: string, url: string, opacity: number, visible: boolean) => {
       const existing = instance.getSource(id) as maplibregl.RasterTileSource | undefined
       if (existing) {
         existing.setTiles([url])
-        return
+      } else {
+        instance.addSource(id, {
+          type: 'raster',
+          tiles: [url],
+          tileSize: 256,
+          minzoom: layer.minzoom,
+          maxzoom: layer.maxzoom,
+          bounds: [-180, -85.051129, 180, 85.051129],
+        })
       }
-      instance.addSource(id, {
-        type: 'raster',
-        tiles: [url],
-        tileSize: 256,
-        minzoom: layer.minzoom,
-        maxzoom: layer.maxzoom,
-        bounds: [-180, -85.051129, 180, 85.051129],
-      })
-      instance.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': opacity } })
+      if (!instance.getLayer(id)) {
+        instance.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': opacity } })
+      } else {
+        instance.setPaintProperty(id, 'raster-opacity', opacity)
+      }
+      instance.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none')
     }
-    addOrUpdateRaster('slope-overlay', layer.urls.slope, 0.8)
-    addOrUpdateRaster('significance-overlay', layer.urls.nonsignificant, 0.82)
+    addOrUpdateRaster('slope-overlay', layer.urls.slope, slopeOpacity.value / 100, slopeVisible.value)
+    addOrUpdateRaster('significance-overlay', layer.urls.nonsignificant, 0.82, significanceVisible.value)
+    moveSelectedRegionToFront(instance)
   }
 
   function drawBounds(mapInstance: MapLibreMap, start: [number, number], end: [number, number]) {
@@ -75,6 +90,27 @@ export function useMap(
       mapInstance.addLayer({ id: 'selected-region-fill', type: 'fill', source: 'selected-region', paint: { 'fill-color': '#0b3d91', 'fill-opacity': 0.12 } })
       mapInstance.addLayer({ id: 'selected-region-line', type: 'line', source: 'selected-region', paint: { 'line-color': '#0b3d91', 'line-width': 2, 'line-dasharray': [2, 1] } })
     }
+    moveSelectedRegionToFront(mapInstance)
+  }
+
+  function showSelectedRegion(instance: MapLibreMap, bounds: [number, number, number, number]) {
+    if (!instance.isStyleLoaded()) {
+      instance.once('load', () => showSelectedRegion(instance, bounds))
+      return
+    }
+    const [west, south, east, rawNorth] = bounds
+    const north = Math.min(85, rawNorth)
+    drawBounds(instance, [west, south], [east, north])
+    instance.fitBounds([[west, south], [east, north]], {
+      padding: { top: 70, right: 45, bottom: 45, left: 45 },
+      maxZoom: 5,
+      duration: 700,
+    })
+  }
+
+  function clearSelectedRegion() {
+    const source = map.value?.getSource('selected-region') as maplibregl.GeoJSONSource | undefined
+    source?.setData({ type: 'FeatureCollection', features: [] })
   }
 
   function startDrawing() {
@@ -88,8 +124,21 @@ export function useMap(
     if (map.value) map.value.getCanvas().style.cursor = ''
   }
 
+  function resizeMap() {
+    const instance = map.value
+    if (!instance) return
+    instance.resize()
+    showSelectedRegion(instance, selectedBounds.value)
+  }
+
   watch(element, (container) => {
-    if (!container || map.value) return
+    if (!container) {
+      map.value?.remove()
+      map.value = null
+      return
+    }
+    if (map.value?.getContainer() === container) return
+    map.value?.remove()
     const instance = new maplibregl.Map({
       container,
       style: blankStyle,
@@ -136,7 +185,11 @@ export function useMap(
     map.value = instance
   }, { immediate: true, flush: 'post' })
 
-  watch(selectedLayer, (layer) => {
+  watch([selectedBounds, map], ([bounds, instance]) => {
+    if (instance) showSelectedRegion(instance, bounds)
+  }, { immediate: true, flush: 'post' })
+
+  watch([selectedLayer, slopeVisible, significanceVisible, slopeOpacity], ([layer]) => {
     const instance = map.value
     if (!instance) return
     if (!layer) {
@@ -151,5 +204,5 @@ export function useMap(
   }, { immediate: true })
 
   onBeforeUnmount(() => map.value?.remove())
-  return { map, drawing, startDrawing, cancelDrawing }
+  return { map, drawing, startDrawing, cancelDrawing, clearSelectedRegion, resizeMap }
 }

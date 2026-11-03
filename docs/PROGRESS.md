@@ -106,16 +106,23 @@ Updated: 2026-11-02
 - [x] Comparison validation and API error messages render above the region selectors, next to the comparison controls.
 - [x] Integrated the supplied Stitch landing, variable catalogue, regional comparison, methods, about/credits, and export screens as application views. All dataset names, statuses, periods, sources, and DOI links are populated from the live API catalogue; comparison results and exports use the existing analysis endpoints.
 - [x] Reworked the landing page to follow the Stitch hierarchy: centered introduction and actions, a real GISTEMP global slope/stipple preview with API scale metadata, three consistently structured workflow cards, a clearly reserved video slot, live analysis-ready variable list, and a compact footer. Excluded the mockup's invented case-study metrics and unsupported trust claims.
+- [x] Added accessible zoom-in, zoom-out, and recenter controls to the landing-page trend-map preview; zoom is bounded and scales both trend imagery and its map grid together.
+- [x] Selecting an example or drawn region in the explorer now outlines its bounding rectangle on the map and fits the viewport to it; the boundary stays above asynchronously loaded trend overlays, and selecting an individual point clears the region outline.
+- [x] Explorer entry now loads the selected variable's trend layer and resizes the map after its container becomes visible. MapLibre instances are disposed when the `v-if` removes their container and recreated on return, avoiding a detached canvas on guided-demo navigation.
+- [x] Added configurable map-layer controls: users can toggle the trend slope and nonsignificance stipple, adjust slope opacity from 0–100%, and read a legend explaining negative/near-zero/positive slopes, nonsignificant cells, and transparent missing data.
+- [x] Guided demos now wait for the analysis-ready GISTEMP record and region list before launching; missing Amazon data reports an error instead of silently falling through to the Arctic example.
 - [x] Added responsive navigation and single-column layouts for the new catalog, comparison, and landing screens on narrow viewports.
-- [x] Added plain-language p-value, confidence-interval, and significance explanations in English and French.
+- [x] Added plain-language p-value, confidence-interval, and significance explanations in English and French. Regional results now display Sen's slope and 95% interval, OLS/Mann–Kendall/Hamed–Rao p-values, and Pettitt candidate shift details.
+- [x] The guided workflow now offers all eight analysis-ready variables across four curated themes, shows each variable's source, unit, period and definition, and applies the user's chosen variable instead of silently substituting one theme default.
+- [x] Expanded the methods screen to explain the 12-month deseasonalization, test assumptions, Hamed–Rao/FDR scope, Pettitt limitations, exact validation statistics, and linked references verified against their source pages.
+- [x] Expanded About/data credits to show each API-catalogued NASA product's period, live processing status, DOI and CMR short name, and separately credit the NASA GIBS basemap and GISTEMP validation series. Aligned the logo with the About title.
 - [x] Added English/French explanation for a non-significant result; demo dialog cites NASA GISTEMP and the verified Arctic-amplification paper.
-- [x] Deferred Hamed-Rao values from the MVP summary and main results; the advanced method remains documented and available in the API for the post-M8 interface.
 - [ ] Verify that the wizard's questions and answers form the required guided detective path, and that both required demos have checked sourced context and actual result verdicts.
 - [ ] Verify small-screen behavior and complete an actual browser walkthrough; these M6 acceptance checks remain outstanding.
 - [ ] M6 reste partiel jusqu'à la vérification du parcours guidé, des exemples et du rendu mobile dans un navigateur.
 - [x] Added frontend utility tests for rate/p-value formatting and fitted-line display. Direct npm dependencies are pinned; Node/npm versions are specified in `.nvmrc` and `package.json`.
 - [x] `npm install` succeeded; direct dependencies are pinned and `web/package-lock.json` is available for reproducible installs.
-- [x] `npm test` passes (6 frontend tests); `npm run build` passes type-checking and production bundling.
+- [x] `npm test` passes (9 frontend tests); `npm run build` passes type-checking and production bundling.
 - [x] Local Vite and API are running. `GET /` and proxied `GET /api/variables` both returned HTTP 200.
 - [ ] Manual mobile/browser review remains outstanding. Build reports a large JavaScript bundle (1.53 MB minified, 459 KB gzip); code splitting would improve first load.
 

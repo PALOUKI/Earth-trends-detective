@@ -93,7 +93,7 @@ export const api = {
   catalog: () => getJson<VariableInfo[]>('/api/catalog'),
   regions: () => getJson<RegionInfo[]>('/api/regions'),
   suggest: (theme: string, place: string) =>
-    getJson<Array<{ variable: string; name: string; definition: string; available: boolean; message: string }>>(
+    getJson<Array<{ variable: string; name: string; definition: string; available: boolean; message: string; region_id?: string | null }>>(
       `/api/suggest?theme=${encodeURIComponent(theme)}&place=${encodeURIComponent(place)}`,
     ),
   region: (variable: string, bounds: [number, number, number, number], label: string, start?: string, end?: string) =>

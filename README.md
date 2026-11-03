@@ -23,6 +23,23 @@ the approved GES DISC application; keep credentials in the local `.env` file.
 
 Then start `make dev` in one terminal and `cd web && npm run dev` in another. The API runs at `http://localhost:8000`; Vite serves the frontend at `http://localhost:5173` and proxies `/api` and `/tiles` requests to it. Run `make build` for a production frontend build. Web dependencies are pinned in `web/package.json` and `web/package-lock.json`.
 
+### Start the app manually
+
+From the project root, start the backend in one terminal:
+
+```sh
+.venv/bin/uvicorn api.app.main:app --host 0.0.0.0 --port 8000
+```
+
+In a second terminal, start the frontend:
+
+```sh
+cd web
+npm run dev
+```
+
+Open the URL printed by Vite (usually `http://localhost:5173`). The frontend proxies API and map-tile requests to the backend on port 8000.
+
 See [docs/PROGRESS.md](docs/PROGRESS.md) for milestone status and known access needs.
 
 ## Remote deployment

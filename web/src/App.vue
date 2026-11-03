@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { use } from 'echarts/core'
 import { LineChart } from 'echarts/charts'
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import type { Analysis, Comparison, MapLayer, RegionInfo, VariableInfo } from './api'
 import { api } from './api'
-import { fittedLine, formatPValue, formatRate } from './trendUtils'
+import { comparisonDirection, fittedLine, formatPValue, formatRate, stepMapZoom } from './trendUtils'
+import { variablesForTheme, type WizardTheme } from './wizardThemes'
 import { useMap } from './useMap'
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
@@ -23,6 +24,7 @@ const copy = {
     startInvestigation: 'Start investigating', browseVariables: 'Browse variables', watchVideo: 'Try a guided example',
     heroFacts: 'Monthly records · Regional analysis · Statistical tests',
     mapPreview: 'Global trend layer', mapPreviewPeriod: 'Processed GISTEMP v4 record', mapPreviewNote: 'Observed global slope layer · non-significant cells are stippled',
+    zoomIn: 'Zoom in', zoomOut: 'Zoom out', recenterMap: 'Recenter map',
     howKicker: 'A REPEATABLE WORKFLOW', howTitle: 'How it works', howLead: 'From a question about a place to a result you can inspect.',
     howChoose: 'Choose a variable', howChooseText: 'Browse measured and modelled NASA products with their definitions, units, sources, and available periods.',
     howRegion: 'Choose a region', howRegionText: 'Select an example region or draw a custom area to calculate its area-weighted monthly series.',
@@ -33,6 +35,8 @@ const copy = {
     readyStatus: 'Analysis ready', compareTitle: 'Compare two regions',
     loadingVariables: 'Loading analysis-ready variables…', noAvailableVariables: 'The API has not returned any analysis-ready variables.',
     compareIntro: 'Use the same available variable and full record for both regions. Results are calculated from their actual processed series.',
+    compareSynthesis: 'Comparison summary', compareOpposite: 'Estimated trends point in opposite directions', compareSameUp: 'Both regions have positive estimated trends', compareSameDown: 'Both regions have negative estimated trends', compareFlat: 'The estimated trends include a near-zero rate', compareSynthesisText: (a: string, aRate: string, aSig: string, b: string, bRate: string, bSig: string) => `${a}: ${aRate} (${aSig}). ${b}: ${bRate} (${bSig}). This describes the selected records; it does not identify a cause.`,
+    significantLabel: 'statistically significant', notSignificantLabel: 'not statistically significant',
     regionA: 'Region A', regionB: 'Region B', runCompare: 'Compare regions', rateA: 'Region A rate', rateB: 'Region B rate',
     compareCaveat: 'Differences describe the selected regional averages. They do not establish a cause.',
     exportTitle: 'Export real analysis products', exportCSV: 'Regional monthly series (CSV)',
@@ -40,7 +44,7 @@ const copy = {
     exportNote: 'Exports use the selected processed dataset. Map files are available only when generated.',
     notOfficial: 'Independent project; not an official NASA product.',
     footerNote: 'Results describe statistical trends in the selected records; they do not establish causes.', footerExplore: 'Explore', footerScience: 'Science', footerProject: 'Project', footerSources: 'Data sources',
-    explore: 'Explore', methods: 'Methods & validation', about: 'About', lang: 'Français',
+    explore: 'Explore', methods: 'Methods & validation', about: 'About', lang: 'Français', language: 'Language',
     parameters: 'Analysis parameters', dataset: 'DATASET', variable: 'Variable',
     accessBlocked: 'Access authorization pending', sampleOnly: 'Sample acquired; trend analysis pending',
     acquiring: 'Downloading granules; analysis pending', seriesProcessed: 'Time series processed; maps pending',
@@ -57,24 +61,33 @@ const copy = {
     significant: 'Significant', notSignificant: 'Not (yet) significant', insufficient: 'Not enough data',
     longerPeriod: 'A longer time period could change this significance result.',
     ols: 'OLS t test', mk: 'Mann–Kendall', hr: 'Hamed–Rao',
+    senSlope: 'Sen slope · 95% interval', pettittTitle: 'Pettitt candidate change point', pettittSignificant: 'candidate shift (p < 0.05)', pettittNotSignificant: 'no statistically significant shift (p ≥ 0.05)',
     raw: 'Monthly values', deseasoned: 'Deseasonalized', trend: 'Linear trend',
     guided: 'Guided investigation', demo: 'Try a guided example', demoTitle: 'Guided examples',
     startDemo: 'Explore example', next: 'Next step', finish: 'Show result', close: 'Close',
+    wizardPlaceNotFound: 'That place did not match a predefined region. Select an example region or draw your own area on the map.',
+    demoDataUnavailable: 'The demo data could not be loaded. Please try again.', demoRegionUnavailable: 'The Amazon example region is missing from the region list.',
     theme: 'What interests you?', themeClimate: 'Climate', themeWater: 'Water',
-    themePlants: 'Vegetation', themeAir: 'Air quality', where: 'Where should we look?',
+    themePlants: 'Vegetation', themeAir: 'Atmosphere & air quality', where: 'Where should we look?',
     source: 'NASA GISS GISTEMP v4', unit: 'K / year', mapTitle: 'Global trend discovery map',
     mapHelp: 'Red cells show positive trends and blue shows negative trends. Dots mark cells that did not pass the map significance threshold. Click a cell to inspect its series.',
+    mapLayers: 'Map layers', slopeLayerToggle: 'Trend slope', significanceLayerToggle: 'Non-significant cells', slopeOpacity: 'Slope opacity', opacityHelp: 'This slider affects the trend-color layer only; significance dots keep their own contrast.',
+    negativeTrend: 'Blue · negative trend', nearZeroTrend: 'Near zero', positiveTrend: 'Red · positive trend', nonsignificantMeaning: 'Black dots · not significant after map FDR (q ≤ 0.10)', missingMeaning: 'Transparent · no valid data',
     noData: 'Processed GISTEMP is not available. Run `make preprocess` to generate it.',
     testConflict: 'The basic and autocorrelation-adjusted tests differ. Check the p-values and confidence interval before drawing a conclusion.',
     disclaimer: 'A significant trend describes statistical evidence of change; it does not identify its cause.',
     aboutTitle: 'Earth Trend Detective', aboutText: 'An educational tool for exploring NASA Earth observations by place and time.',
     data: 'Data & credits', limitations: 'Limitations', periodShort: 'period', coordinates: 'Selected grid cell',
+    dataScope: 'The catalogue below lists the NASA products and analysis periods configured in the app, with their current processing status. Supporting map imagery and the independent validation series are listed separately.', supportingData: 'Supporting data and map imagery', basemapRole: 'Geographic background only; not used to calculate trends.', validationRole: 'Independent reference used to validate the GISTEMP gridded global mean; not an input to regional trend analysis.',
     choose: 'Select',
-    methodsIntro: 'The tool separates the regional analysis from the discovery map. Click a region or grid cell to see the full Base analysis.',
-    m1: 'OLS fits a straight line through the deseasonalized monthly anomalies. The t test and 95% interval describe uncertainty under independent residuals.',
-    m2: 'Mann–Kendall tests whether values tend to move in one direction. Sen’s slope gives a robust rate using pairwise slopes.',
-    m3: 'Hamed–Rao adjusts the Mann–Kendall variance for serial dependence. The global map uses a fast OLS test followed by Benjamini–Hochberg FDR at 0.10.',
-    validation: 'Validation against NASA’s published monthly global series: 561 months (1980–2026), 0.050 K RMSE; global slopes agree within 0.000001 K/year.',
+    methodsIntro: 'Regional statistics are calculated from deseasonalized monthly series. The discovery map uses per-cell trend estimates with a multiple-testing correction.',
+    m1: 'Ordinary least squares (OLS) fits a straight line to deseasonalized monthly values. Its two-sided t test and 95% confidence interval assume independent, normally distributed residuals; serial correlation can make this test too optimistic.',
+    m2: 'Mann–Kendall tests for a monotonic direction without assuming normally distributed values. Sen’s slope is the median of pairwise slopes and has a 95% confidence interval. These rank-based results complement, rather than replace, the OLS rate.',
+    m3: 'The regional Hamed–Rao modified Mann–Kendall p-value adjusts variance for serial dependence (up to three lags in this implementation). The map applies Benjamini–Hochberg false discovery rate correction at α = 0.10 across valid cells. Hamed–Rao can be unavailable for some series.',
+    seasonalityMethod: 'For each position in the repeating 12-month cycle, the selected series’ mean is calculated across the selected period and subtracted from matching positions. Trend statistics use these deseasonalized values. This is a simple monthly-climatology adjustment, not a full STL decomposition.',
+    breakMethod: 'Pettitt’s rank test reports the strongest candidate split in a regional or point series and an approximate p-value. A candidate shift is not a cause, and a linear trend can influence this one-break test; interpret it alongside the trend statistics.',
+    validation: 'Validation against NASA’s published global monthly series for 1980-01 through 2026-09 (561 overlapping months): bias 0.00267 K, RMSE 0.05006 K, maximum absolute difference 0.18366 K. The gridded and NASA published slopes were 0.0210564 and 0.0210556 K/year, respectively (difference 0.0000008 K/year). The global means use different averaging methods.',
+    references: 'Method references',
     mapWindow: 'Map window',
     blankMap: 'Trend layer unavailable', point: 'Point', region: 'Region',
     dataFrequency: 'Monthly · 2° grid', fieldHelp: 'Choose an example area or drag over the map.',
@@ -87,6 +100,7 @@ const copy = {
     startInvestigation: 'Commencer l’enquête', browseVariables: 'Parcourir les variables', watchVideo: 'Essayer un exemple guidé',
     heroFacts: 'Séries mensuelles · Analyse régionale · Tests statistiques',
     mapPreview: 'Couche mondiale de tendance', mapPreviewPeriod: 'Série GISTEMP v4 traitée', mapPreviewNote: 'Pente globale observée · les mailles non significatives sont pointillées',
+    zoomIn: 'Agrandir la carte', zoomOut: 'Réduire la carte', recenterMap: 'Recentrer la carte',
     howKicker: 'UN PARCOURS REPRODUCTIBLE', howTitle: 'Comment ça marche', howLead: 'D’une question sur un lieu à un résultat que vous pouvez examiner.',
     howChoose: 'Choisir une variable', howChooseText: 'Parcourez les produits NASA mesurés ou modélisés, avec leurs définitions, unités, sources et périodes disponibles.',
     howRegion: 'Choisir une région', howRegionText: 'Sélectionnez une région d’exemple ou dessinez une zone pour calculer sa série mensuelle pondérée par la surface.',
@@ -97,6 +111,8 @@ const copy = {
     readyStatus: 'Analyse disponible', compareTitle: 'Comparer deux régions',
     loadingVariables: 'Chargement des variables analysables…', noAvailableVariables: 'L’API n’a renvoyé aucune variable analysable.',
     compareIntro: 'Une même variable et toute la période disponible sont utilisées dans les deux régions. Les résultats sont calculés à partir des séries traitées.',
+    compareSynthesis: 'Synthèse de la comparaison', compareOpposite: 'Les tendances estimées sont de sens opposé', compareSameUp: 'Les tendances estimées sont positives dans les deux régions', compareSameDown: 'Les tendances estimées sont négatives dans les deux régions', compareFlat: 'Les tendances estimées comprennent un taux proche de zéro', compareSynthesisText: (a: string, aRate: string, aSig: string, b: string, bRate: string, bSig: string) => `${a} : ${aRate} (${aSig}). ${b} : ${bRate} (${bSig}). Cela décrit les séries sélectionnées, sans identifier de cause.`,
+    significantLabel: 'statistiquement significative', notSignificantLabel: 'pas statistiquement significative',
     regionA: 'Région A', regionB: 'Région B', runCompare: 'Comparer les régions', rateA: 'Taux région A', rateB: 'Taux région B',
     compareCaveat: 'Les différences décrivent les moyennes régionales choisies ; elles ne démontrent pas une cause.',
     exportTitle: 'Exporter les résultats calculés', exportCSV: 'Série mensuelle régionale (CSV)',
@@ -104,7 +120,7 @@ const copy = {
     exportNote: 'Les exports utilisent les données traitées sélectionnées. Les cartes sont disponibles uniquement si elles ont été générées.',
     notOfficial: 'Projet indépendant ; ce n’est pas un produit officiel de la NASA.',
     footerNote: 'Les résultats décrivent des tendances statistiques dans les données choisies ; ils n’en établissent pas les causes.', footerExplore: 'Explorer', footerScience: 'Méthodes', footerProject: 'Projet', footerSources: 'Sources des données',
-    explore: 'Explorer', methods: 'Méthodes et validation', about: 'À propos', lang: 'English',
+    explore: 'Explorer', methods: 'Méthodes et validation', about: 'À propos', lang: 'English', language: 'Langue',
     parameters: 'Paramètres d’analyse', dataset: 'JEU DE DONNÉES', variable: 'Variable',
     accessBlocked: 'Autorisation d’accès en attente', sampleOnly: 'Échantillon acquis ; analyse en attente',
     acquiring: 'Granules en téléchargement ; analyse en attente', seriesProcessed: 'Série prétraitée ; cartes en attente',
@@ -121,24 +137,33 @@ const copy = {
     significant: 'Significative', notSignificant: 'Pas (encore) significative', insufficient: 'Données insuffisantes',
     longerPeriod: 'Une période plus longue pourrait changer ce résultat de significativité.',
     ols: 'Test t MCO', mk: 'Mann–Kendall', hr: 'Hamed–Rao',
+    senSlope: 'Pente de Sen · intervalle à 95 %', pettittTitle: 'Point de rupture candidat (Pettitt)', pettittSignificant: 'rupture candidate (p < 0,05)', pettittNotSignificant: 'pas de rupture statistiquement significative (p ≥ 0,05)',
     raw: 'Valeurs mensuelles', deseasoned: 'Désaisonnalisée', trend: 'Tendance linéaire',
     guided: 'Parcours guidé', demo: 'Voir un exemple guidé', demoTitle: 'Exemples guidés',
     startDemo: 'Explorer cet exemple', next: 'Étape suivante', finish: 'Voir le résultat', close: 'Fermer',
+    wizardPlaceNotFound: 'Ce lieu ne correspond à aucune région prédéfinie. Choisissez une région proposée ou dessinez votre zone sur la carte.',
+    demoDataUnavailable: 'Les données nécessaires à la démo n’ont pas pu être chargées. Réessayez.', demoRegionUnavailable: 'La région d’exemple de l’Amazonie est absente de la liste des régions.',
     theme: 'Quel thème vous intéresse ?', themeClimate: 'Climat', themeWater: 'Eau',
-    themePlants: 'Végétation', themeAir: 'Qualité de l’air', where: 'Où regarder ?',
+    themePlants: 'Végétation', themeAir: 'Atmosphère et qualité de l’air', where: 'Où regarder ?',
     source: 'NASA GISS GISTEMP v4', unit: 'K / an', mapTitle: 'Carte mondiale des tendances',
     mapHelp: 'Le rouge indique une tendance positive et le bleu une tendance négative. Les points marquent les mailles qui ne passent pas le seuil statistique. Cliquez sur une maille pour voir sa série.',
+    mapLayers: 'Couches de la carte', slopeLayerToggle: 'Pente de tendance', significanceLayerToggle: 'Mailles non significatives', slopeOpacity: 'Opacité de la pente', opacityHelp: 'Ce curseur agit uniquement sur la couleur de la tendance ; les points de significativité gardent leur contraste.',
+    negativeTrend: 'Bleu · tendance négative', nearZeroTrend: 'Proche de zéro', positiveTrend: 'Rouge · tendance positive', nonsignificantMeaning: 'Points noirs · non significatif après FDR sur la carte (q ≤ 0,10)', missingMeaning: 'Transparent · aucune donnée valide',
     noData: 'GISTEMP prétraité est indisponible. Lancez `make preprocess` pour le générer.',
     testConflict: 'Les tests simple et corrigé de l’autocorrélation diffèrent. Comparez les valeurs p et l’intervalle avant toute conclusion.',
     disclaimer: 'Une tendance significative indique une preuve statistique de changement, pas sa cause.',
     aboutTitle: 'Détective des tendances terrestres', aboutText: 'Un outil pédagogique pour explorer les observations NASA selon le lieu et la période.',
     data: 'Données et crédits', limitations: 'Limites', periodShort: 'période', coordinates: 'Maille sélectionnée',
+    dataScope: 'Le catalogue ci-dessous répertorie les produits NASA et périodes configurés dans l’application, avec leur état de traitement actuel. Le fond cartographique et la série de validation indépendante sont indiqués séparément.', supportingData: 'Données et fond cartographique complémentaires', basemapRole: 'Fond géographique uniquement ; il ne sert pas au calcul des tendances.', validationRole: 'Référence indépendante pour valider la moyenne globale maillée GISTEMP ; elle n’entre pas dans l’analyse des tendances régionales.',
     choose: 'Choisir',
-    methodsIntro: 'L’outil distingue l’analyse régionale de la carte de repérage. Cliquez sur une région ou une maille pour afficher l’analyse complète.',
-    m1: 'Les MCO ajustent une droite aux anomalies mensuelles désaisonnalisées. Le test t et l’intervalle à 95 % décrivent l’incertitude sous indépendance des résidus.',
-    m2: 'Mann–Kendall teste si les valeurs évoluent dans une direction. La pente de Sen estime un taux robuste à partir des pentes entre paires.',
-    m3: 'Hamed–Rao ajuste la variance Mann–Kendall à la dépendance temporelle. La carte utilise un test MCO rapide suivi de FDR Benjamini–Hochberg à 0,10.',
-    validation: 'Validation avec la série mensuelle globale publiée par NASA : 561 mois (1980–2026), RMSE de 0,050 K ; les pentes mondiales diffèrent de moins de 0,000001 K/an.',
+    methodsIntro: 'Les statistiques régionales sont calculées à partir des séries mensuelles désaisonnalisées. La carte de repérage estime les tendances par maille et corrige les tests multiples.',
+    m1: 'Les moindres carrés ordinaires (MCO) ajustent une droite aux valeurs mensuelles désaisonnalisées. Le test t bilatéral et l’intervalle de confiance à 95 % supposent des résidus indépendants et normalement distribués ; l’autocorrélation peut rendre ce test trop optimiste.',
+    m2: 'Mann–Kendall teste une évolution monotone sans supposer une distribution normale. La pente de Sen est la médiane des pentes entre paires et son intervalle de confiance est à 95 %. Ces résultats fondés sur les rangs complètent le taux MCO, sans le remplacer.',
+    m3: 'La valeur p régionale Hamed–Rao modifie la variance du test Mann–Kendall pour tenir compte de la dépendance temporelle (jusqu’à trois retards ici). La carte applique la correction du taux de fausses découvertes de Benjamini–Hochberg, α = 0,10, aux mailles valides. Hamed–Rao peut être indisponible pour certaines séries.',
+    seasonalityMethod: 'Pour chaque position du cycle de 12 mois, la moyenne de la série sur la période choisie est calculée puis soustraite aux positions correspondantes. Les statistiques de tendance utilisent ces valeurs désaisonnalisées. C’est une correction simple par climatologie mensuelle, pas une décomposition STL complète.',
+    breakMethod: 'Le test de rang de Pettitt indique la séparation candidate la plus marquée d’une série régionale ou ponctuelle et une valeur p approchée. Cette rupture candidate n’en établit pas la cause ; une tendance linéaire peut aussi influencer ce test à une rupture. Il faut le lire avec les statistiques de tendance.',
+    validation: 'Validation avec la série mensuelle globale publiée par NASA, de 1980-01 à 2026-09 (561 mois communs) : biais 0,00267 K, RMSE 0,05006 K, écart absolu maximal 0,18366 K. Les pentes de la grille et de la série NASA publiée sont respectivement de 0,0210564 et 0,0210556 K/an (écart de 0,0000008 K/an). Les moyennes globales utilisent des méthodes de calcul différentes.',
+    references: 'Références des méthodes',
     mapWindow: 'Période de la carte',
     blankMap: 'Carte de tendance indisponible', point: 'Point', region: 'Région',
     dataFrequency: 'Mensuel · grille de 2°', fieldHelp: 'Choisissez une zone ou tracez-la sur la carte.',
@@ -148,10 +173,21 @@ const copy = {
 
 const locale = ref<Locale>('fr')
 const t = computed(() => copy[locale.value])
+const wizardThemeOptions = computed(() => [
+  { id: 'climate' as const, label: t.value.themeClimate },
+  { id: 'water' as const, label: t.value.themeWater },
+  { id: 'vegetation' as const, label: t.value.themePlants },
+  { id: 'air' as const, label: t.value.themeAir },
+])
 const page = ref<AppPage>('home')
 const mapElement = ref<HTMLElement | null>(null)
 const mapLayer = ref<MapLayer | null>(null)
+const showSlopeLayer = ref(true)
+const showSignificanceLayer = ref(true)
+const slopeOpacity = ref(80)
+const showMapLayers = ref(false)
 const landingMapLayer = ref<MapLayer | null>(null)
+const landingMapZoom = ref(1)
 const mapWindow = ref<WindowId>('full')
 const variables = ref<VariableInfo[]>([])
 const catalogVariables = ref<VariableInfo[]>([])
@@ -167,20 +203,23 @@ const landingSlopeUrl = computed(() => api.exportUrl({
 const landingSignificanceUrl = computed(() => api.exportUrl({
   variable: 'gistemp_tas_anom', format: 'png', window: 'full', layer: 'nonsignificant',
 }))
+function zoomLandingMap(direction: -1 | 1) {
+  landingMapZoom.value = stepMapZoom(landingMapZoom.value, direction)
+}
 const inventoryLoading = ref(true)
 const catalogSearch = ref('')
 const catalogStatus = ref('all')
 const selectedVariable = ref('gistemp_tas_anom')
-const wizardTheme = ref('climate')
+const wizardTheme = ref<WizardTheme>('climate')
+const wizardVariableId = ref('gistemp_tas_anom')
 const activeVariable = computed(() => catalogVariables.value.find((item) => item.id === selectedVariable.value)
   ?? readyVariables.value.find((item) => item.id === selectedVariable.value)
   ?? readyVariables.value[0])
-const wizardVariableId = computed(() => ({
-  climate: 'gistemp_tas_anom', water: 'gpm_precipitation', vegetation: 'modis_ndvi',
-  air: 'omi_no2',
-}[wizardTheme.value] ?? 'gistemp_tas_anom'))
-const wizardVariable = computed(() => catalogVariables.value.find((item) => item.id === wizardVariableId.value) ?? variables.value[0])
-const wizardVariableReady = computed(() => variables.value.some((item) => item.id === wizardVariableId.value))
+const wizardVariables = computed(() => variablesForTheme(wizardTheme.value)
+  .map((id) => catalogVariables.value.find((item) => item.id === id))
+  .filter((item): item is VariableInfo => Boolean(item)))
+const wizardVariable = computed(() => wizardVariables.value.find((item) => item.id === wizardVariableId.value))
+const wizardVariableReady = computed(() => readyVariables.value.some((item) => item.id === wizardVariableId.value))
 const isAnalysisReady = computed(() => readyVariables.value.some((item) => item.id === selectedVariable.value))
 const filteredCatalog = computed(() => catalogVariables.value.filter((item) => {
   const query = catalogSearch.value.toLowerCase()
@@ -208,10 +247,36 @@ const wizardPlace = ref('Amazon')
 const showDemos = ref(false)
 const demoStep = ref(0)
 const activeDemo = ref('')
+const demoError = ref('')
 const chartMode = ref<'anomaly' | 'raw'>('anomaly')
 
 const comparisonOptionA = computed(() => comparison.value ? comparisonChartOption(comparison.value.a) : {})
 const comparisonOptionB = computed(() => comparison.value ? comparisonChartOption(comparison.value.b) : {})
+const comparisonSynthesis = computed(() => {
+  if (!comparison.value) return null
+  const { a, b } = comparison.value
+  const slopeA = a.trend.slope_ols
+  const slopeB = b.trend.slope_ols
+  if (slopeA === null || slopeB === null || !Number.isFinite(slopeA) || !Number.isFinite(slopeB)) {
+    return { title: t.value.insufficient, text: t.value.compareCaveat }
+  }
+  const direction = comparisonDirection(slopeA, slopeB)
+  const title = direction === 'opposite'
+    ? t.value.compareOpposite
+    : direction === 'same_up'
+      ? t.value.compareSameUp
+      : direction === 'same_down'
+        ? t.value.compareSameDown
+        : t.value.compareFlat
+  const significance = (value: boolean) => value ? t.value.significantLabel : t.value.notSignificantLabel
+  return {
+    title,
+    text: t.value.compareSynthesisText(
+      a.label, formatRate(slopeA, a.rate_unit), significance(a.significant),
+      b.label, formatRate(slopeB, b.rate_unit), significance(b.significant),
+    ),
+  }
+})
 const regionalCsvUrl = computed(() => api.exportUrl({
   variable: selectedVariable.value, format: 'csv', bounds: selectedBounds.value,
 }))
@@ -363,6 +428,7 @@ async function runAnalysis() {
 
 async function inspectPoint(lat: number, lon: number) {
   if (!isAnalysisReady.value) return
+  clearSelectedRegion()
   loading.value = true
   error.value = ''
   selectedPoint.value = { lat, lon }
@@ -400,44 +466,85 @@ function beginWizard() {
   showWizard.value = true
 }
 
+function chooseWizardTheme(theme: WizardTheme) {
+  wizardTheme.value = theme
+  const themeIds = variablesForTheme(theme)
+  wizardVariableId.value = themeIds.find((id) => readyVariables.value.some((item) => item.id === id))
+    ?? themeIds[0]
+    ?? ''
+}
+
+function isWizardVariableReady(id: string) {
+  return readyVariables.value.some((item) => item.id === id)
+}
+
 async function wizardNext() {
   if (wizardStep.value < 3) {
     wizardStep.value++
     return
   }
-  showWizard.value = false
+  if (!wizardVariable.value || !wizardVariableReady.value) return
   const suggestions = await api.suggest(wizardTheme.value, wizardPlace.value)
-  if (!suggestions[0]?.available) {
-    error.value = suggestions[0]?.variable === 'omi_no2'
-      ? t.value.qualityPending
-      : suggestions[0]?.message ?? ''
+  const query = wizardPlace.value.trim().toLowerCase()
+  const match = regions.value.find((item) => item.id === suggestions[0]?.region_id)
+    ?? regions.value.find((item) => `${item.id} ${item.name} ${item.name_fr}`.toLowerCase().includes(query))
+  if (!match) {
+    showWizard.value = false
+    page.value = 'explore'
+    selectedVariable.value = wizardVariableId.value
+    error.value = t.value.wizardPlaceNotFound
     return
   }
-  if (suggestions[0]?.variable) selectedVariable.value = suggestions[0].variable
-  const match = regions.value.find((item) => `${item.name} ${item.name_fr}`.toLowerCase().includes(wizardPlace.value.toLowerCase()))
-  if (match) chooseRegion(match.id)
+  showWizard.value = false
+  page.value = 'explore'
+  selectedVariable.value = wizardVariableId.value
+  chooseRegion(match.id)
 }
 
 async function startDemo(id: string) {
-  page.value = 'explore'
-  selectedVariable.value = 'gistemp_tas_anom'
-  activeDemo.value = id
-  demoStep.value = 1
-  showDemos.value = false
-  period.value = 'full'
-  const region = id === 'arctic' ? null : regions.value.find((item) => item.id === (id === 'sahara' ? 'sahara' : 'amazon'))
-  if (region) {
-    regionId.value = region.id
-    selectedBounds.value = region.bounds
-    selectedLabel.value = locale.value === 'fr' ? region.name_fr : region.name
-  } else {
-    selectedBounds.value = [-180, 70, 180, 90]
-    selectedLabel.value = locale.value === 'fr' ? 'Arctique (70–90°N)' : 'Arctic (70–90°N)'
-    regionId.value = ''
-    selectedPoint.value = null
+  demoError.value = ''
+  try {
+    const [loadedRegions, loadedVariables] = await Promise.all([
+      regions.value.length ? Promise.resolve(regions.value) : api.regions(),
+      readyVariables.value.some((item) => item.id === 'gistemp_tas_anom')
+        ? Promise.resolve(readyVariables.value)
+        : api.variables(),
+    ])
+    if (!regions.value.length) regions.value = loadedRegions
+    if (!readyVariables.value.some((item) => item.id === 'gistemp_tas_anom')) variables.value = loadedVariables
+    if (!readyVariables.value.some((item) => item.id === 'gistemp_tas_anom')) {
+      demoError.value = t.value.demoDataUnavailable
+      return
+    }
+    const region = id === 'arctic' ? null : regions.value.find((item) => item.id === id)
+    if (id !== 'arctic' && !region) {
+      demoError.value = t.value.demoRegionUnavailable
+      return
+    }
+
+    page.value = 'explore'
+    selectedVariable.value = 'gistemp_tas_anom'
+    activeDemo.value = id
+    demoStep.value = 1
+    period.value = 'full'
+    if (region) {
+      regionId.value = region.id
+      selectedBounds.value = region.bounds
+      selectedLabel.value = locale.value === 'fr' ? region.name_fr : region.name
+    } else {
+      selectedBounds.value = [-180, 70, 180, 90]
+      selectedLabel.value = locale.value === 'fr' ? 'Arctique (70–90°N)' : 'Arctic (70–90°N)'
+      regionId.value = ''
+      selectedPoint.value = null
+    }
+    showDemos.value = false
+    await nextTick()
+    resizeMap()
+    await Promise.all([loadMap(), runAnalysis()])
+    demoStep.value = 1
+  } catch {
+    demoError.value = t.value.demoDataUnavailable
   }
-  await runAnalysis()
-  demoStep.value = 1
 }
 
 function stepDemo() {
@@ -449,7 +556,22 @@ function stepDemo() {
   }
 }
 
-const { drawing, startDrawing, cancelDrawing } = useMap(mapElement, mapLayer, inspectPoint, chooseDrawnRegion)
+function openDemoPicker() {
+  demoError.value = ''
+  showDemos.value = true
+}
+
+const { drawing, startDrawing, cancelDrawing, clearSelectedRegion, resizeMap } = useMap(
+  mapElement, mapLayer, selectedBounds, showSlopeLayer, showSignificanceLayer, slopeOpacity,
+  inspectPoint, chooseDrawnRegion,
+)
+
+watch([page, isAnalysisReady], async ([currentPage, ready]) => {
+  if (currentPage !== 'explore' || !ready) return
+  await nextTick()
+  requestAnimationFrame(() => resizeMap())
+  void loadMap()
+}, { flush: 'post' })
 
 watch(period, () => {
   void runAnalysis()
@@ -506,9 +628,14 @@ onMounted(async () => {
         <button :class="{ active: page === 'about' }" @click="page = 'about'">{{ t.about }}</button>
       </nav>
       <div class="top-actions">
-        <button class="language-toggle" :aria-label="`Switch language to ${t.lang}`" @click="locale = locale === 'en' ? 'fr' : 'en'">{{ locale.toUpperCase() }}</button>
+        <div class="language-switch" role="group" :aria-label="t.language">
+          <svg class="language-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+          <button :class="{ selected: locale === 'en' }" :aria-pressed="locale === 'en'" @click="locale = 'en'">EN</button>
+          <span aria-hidden="true">|</span>
+          <button :class="{ selected: locale === 'fr' }" :aria-pressed="locale === 'fr'" @click="locale = 'fr'">FR</button>
+        </div>
         <button v-if="page === 'explore' && isAnalysisReady" class="button secondary compact" @click="showExport = true">↓ <span>Export</span></button>
-        <button class="button secondary compact" @click="showDemos = true">▶ <span>{{ t.demo }}</span></button>
+        <button class="button secondary compact" @click="openDemoPicker">▶ <span>{{ t.demo }}</span></button>
       </div>
     </header>
 
@@ -519,7 +646,7 @@ onMounted(async () => {
         <p>{{ t.homeLead }}</p>
         <div class="landing-actions">
           <button class="button primary landing-primary" @click="page = 'explore'; beginWizard()">{{ t.startInvestigation }} <span aria-hidden="true">→</span></button>
-          <button class="button secondary landing-secondary" @click="showDemos = true"><span aria-hidden="true">▷</span> {{ t.watchVideo }}</button>
+          <button class="button secondary landing-secondary" @click="openDemoPicker"><span aria-hidden="true">▷</span> {{ t.watchVideo }}</button>
         </div>
       </section>
 
@@ -528,9 +655,16 @@ onMounted(async () => {
           <div><span class="eyebrow">{{ t.mapPreview }}</span><h2 id="landing-map-title">{{ gistempCatalogItem?.source ?? 'NASA GISS GISTEMP v4' }}</h2></div>
           <span class="map-period-chip">{{ gistempCatalogItem?.period ?? t.mapPreviewPeriod }}</span>
         </div>
-        <div class="landing-world-map" role="img" :aria-label="`${t.mapPreview} — ${gistempCatalogItem?.source ?? 'NASA GISS GISTEMP v4'}`">
-          <img class="landing-slope-image" :src="landingSlopeUrl" alt="" />
-          <img class="landing-significance-image" :src="landingSignificanceUrl" alt="" />
+        <div class="landing-world-map" role="group" :aria-label="`${t.mapPreview} — ${gistempCatalogItem?.source ?? 'NASA GISS GISTEMP v4'}`">
+          <div class="landing-map-visual" :style="{ transform: `scale(${landingMapZoom})` }" aria-hidden="true">
+            <img class="landing-slope-image" :src="landingSlopeUrl" alt="" />
+            <img class="landing-significance-image" :src="landingSignificanceUrl" alt="" />
+          </div>
+          <div class="landing-map-controls" role="group" :aria-label="t.mapPreview">
+            <button type="button" :aria-label="t.zoomIn" :title="t.zoomIn" :disabled="landingMapZoom >= 3" @click="zoomLandingMap(1)">+</button>
+            <button type="button" :aria-label="t.zoomOut" :title="t.zoomOut" :disabled="landingMapZoom <= 1" @click="zoomLandingMap(-1)">−</button>
+            <button type="button" class="recenter-map" :aria-label="t.recenterMap" :title="t.recenterMap" :disabled="landingMapZoom === 1" @click="landingMapZoom = 1">⌖</button>
+          </div>
           <span v-if="!landingMapLayer" class="map-preview-loading">{{ t.loadingMap }}</span>
         </div>
         <div class="landing-map-legend">
@@ -553,7 +687,7 @@ onMounted(async () => {
       <section class="landing-section video-section">
         <div class="landing-section-heading"><span class="eyebrow">{{ t.videoKicker }}</span><h2>{{ t.videoTitle }}</h2><p>{{ t.videoText }}</p></div>
         <div class="video-placeholder">
-          <div class="video-placeholder-content"><span class="video-play" aria-hidden="true">▷</span><strong>{{ t.videoKicker }}</strong><button class="text-button" @click="showDemos = true">{{ t.guidedExamples }} →</button></div>
+          <div class="video-placeholder-content"><span class="video-play" aria-hidden="true">▷</span><strong>{{ t.videoKicker }}</strong><button class="text-button" @click="openDemoPicker">{{ t.guidedExamples }} →</button></div>
         </div>
       </section>
 
@@ -605,6 +739,22 @@ onMounted(async () => {
           <p class="chart-footnote">{{ result.trend.n_valid }} {{ t.observations }} · p (OLS) {{ formatPValue(result.trend.p_ols) }}</p>
         </article>
       </div>
+      <section v-if="comparisonSynthesis" class="comparison-synthesis" aria-live="polite">
+        <div><span class="eyebrow">{{ t.compareSynthesis }}</span><h2>{{ comparisonSynthesis.title }}</h2><p>{{ comparisonSynthesis.text }}</p></div>
+        <div v-if="comparison" class="synthesis-directions" aria-hidden="true">
+          <span class="direction-icon" :class="comparison.a.trend.slope_ols === null ? 'unknown' : comparison.a.trend.slope_ols >= 0 ? 'up' : 'down'">
+            <svg v-if="comparison.a.trend.slope_ols !== null && comparison.a.trend.slope_ols >= 0" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8M15 7h6v6"/></svg>
+            <svg v-else-if="comparison.a.trend.slope_ols !== null" viewBox="0 0 24 24"><path d="m3 7 6 6 4-4 8 8m-6 0h6v-6"/></svg>
+            <span v-else>?</span>
+          </span>
+          <svg class="direction-compare" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 8h15m-4-4 4 4-4 4M20 16H5m4 4-4-4 4-4"/></svg>
+          <span class="direction-icon" :class="comparison.b.trend.slope_ols === null ? 'unknown' : comparison.b.trend.slope_ols >= 0 ? 'up' : 'down'">
+            <svg v-if="comparison.b.trend.slope_ols !== null && comparison.b.trend.slope_ols >= 0" viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8M15 7h6v6"/></svg>
+            <svg v-else-if="comparison.b.trend.slope_ols !== null" viewBox="0 0 24 24"><path d="m3 7 6 6 4-4 8 8m-6 0h6v-6"/></svg>
+            <span v-else>?</span>
+          </span>
+        </div>
+      </section>
       <p v-if="comparison" class="compare-caveat">{{ t.compareCaveat }}</p>
     </main>
 
@@ -663,11 +813,14 @@ onMounted(async () => {
             <div class="rate-value">{{ formatRate(analysis.trend.slope_ols, analysis.rate_unit) }}</div>
             <div class="rate-label">{{ t.rate }} <span class="info" :title="t.m1">ⓘ</span></div>
             <div class="confidence-row"><span>{{ t.confidence }} <span class="info" :title="t.confidenceHelp" :aria-label="t.confidenceHelp">ⓘ</span></span><strong>{{ formatRate(analysis.trend.slope_ols_lo, analysis.rate_unit) }} – {{ formatRate(analysis.trend.slope_ols_hi, analysis.rate_unit) }}</strong></div>
+            <div class="confidence-row sen-row" :title="t.m2"><span>{{ t.senSlope }} ⓘ</span><strong>{{ formatRate(analysis.trend.slope, analysis.rate_unit) }} · {{ formatRate(analysis.trend.slope_lo, analysis.rate_unit) }} – {{ formatRate(analysis.trend.slope_hi, analysis.rate_unit) }}</strong></div>
             <div class="test-grid">
               <div :title="`${t.pValueHelp} ${t.m1}`"><span>{{ t.ols }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_ols) }}</strong></div>
               <div :title="`${t.pValueHelp} ${t.m2}`"><span>{{ t.mk }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_mk) }}</strong></div>
+              <div :title="`${t.pValueHelp} ${t.m3}`"><span>{{ t.hr }} ⓘ</span><strong>p {{ formatPValue(analysis.trend.p_value) }}</strong></div>
             </div>
             <p v-if="testConflict" class="period-note conflict-note">{{ t.testConflict }}</p>
+            <div v-if="analysis.break" class="break-result" :title="t.breakMethod"><span>{{ t.pettittTitle }} · {{ analysis.break.date }}</span><strong>p {{ formatPValue(analysis.break.p) }} · {{ analysis.break.significant ? t.pettittSignificant : t.pettittNotSignificant }}</strong></div>
             <p class="plain-summary">{{ analysis.summary[locale] }}</p>
             <p v-if="!analysis.significant" class="period-note">{{ t.longerPeriod }}</p>
           </section>
@@ -681,9 +834,26 @@ onMounted(async () => {
           <div><span class="eyebrow">{{ t.mapTitle }}</span><p>{{ t.mapHelp }}</p></div>
           <label class="map-period"><span>{{ t.mapWindow }}</span><select v-model="mapWindow"><option v-for="window in activeVariable?.windows ?? ['full']" :key="window" :value="window">{{ window === 'full' ? t.full : window === '2010-fin' ? t.since2010 : t.since2015 }}</option></select></label>
         </div>
+        <div class="map-layer-control">
+          <button class="map-layer-trigger" type="button" :aria-expanded="showMapLayers" @click="showMapLayers = !showMapLayers">▤ {{ t.mapLayers }} <span>{{ showMapLayers ? '−' : '+' }}</span></button>
+          <section v-if="showMapLayers" class="map-layer-panel" :aria-label="t.mapLayers">
+            <label class="map-layer-toggle"><input v-model="showSlopeLayer" type="checkbox" />{{ t.slopeLayerToggle }}</label>
+            <div class="map-opacity-heading"><label for="slope-opacity">{{ t.slopeOpacity }}</label><output for="slope-opacity">{{ slopeOpacity }}%</output></div>
+            <input id="slope-opacity" v-model.number="slopeOpacity" class="map-opacity-slider" type="range" min="0" max="100" step="5" :disabled="!showSlopeLayer" :aria-label="t.slopeOpacity" />
+            <p class="map-opacity-help">{{ t.opacityHelp }}</p>
+            <label class="map-layer-toggle"><input v-model="showSignificanceLayer" type="checkbox" />{{ t.significanceLayerToggle }}</label>
+            <div v-if="showSlopeLayer" class="map-layer-key">
+              <span class="map-layer-gradient" aria-hidden="true"></span>
+              <div class="map-layer-gradient-labels"><span>{{ t.negativeTrend }}</span><span>{{ t.nearZeroTrend }}</span><span>{{ t.positiveTrend }}</span></div>
+              <small v-if="mapLayer">{{ mapLayer.scale_min.toFixed(3) }} — 0 — +{{ Math.abs(mapLayer.scale_max).toFixed(3) }} {{ mapLayer.slope_unit }}</small>
+            </div>
+            <div v-if="showSignificanceLayer" class="map-layer-note"><span class="map-dot-swatch" aria-hidden="true"></span>{{ t.nonsignificantMeaning }}</div>
+            <div class="map-layer-note"><span class="map-transparent-swatch" aria-hidden="true"></span>{{ t.missingMeaning }}</div>
+          </section>
+        </div>
         <div ref="mapElement" class="map-canvas" :aria-label="t.mapTitle"></div>
-        <div class="map-overlay-label"><span class="overlay-swatch"></span>{{ t.slopeLayer }} · {{ mapLayer?.slope_unit }} <span class="subtle-separator">|</span> {{ t.nonsignificantLayer }}</div>
-        <div class="map-legend" aria-label="Diverging trend palette legend"><span>{{ mapLayer?.scale_min.toFixed(3) ?? '−' }}</span><div class="legend-gradient"></div><span>0</span><span class="legend-gradient reverse"></span><span>+{{ Math.abs(mapLayer?.scale_max ?? 0).toFixed(3) }}</span><small>{{ mapLayer?.slope_unit }}</small></div>
+        <div v-if="showSlopeLayer || showSignificanceLayer" class="map-overlay-label"><span v-if="showSlopeLayer" class="overlay-swatch"></span><span v-if="showSlopeLayer">{{ t.slopeLayer }} · {{ mapLayer?.slope_unit }}</span><span v-if="showSlopeLayer && showSignificanceLayer" class="subtle-separator">|</span><span v-if="showSignificanceLayer">{{ t.nonsignificantLayer }}</span></div>
+        <div v-if="mapLayer && showSlopeLayer" class="map-legend" aria-label="Diverging trend palette legend"><span>{{ mapLayer.scale_min.toFixed(3) }}</span><div class="legend-gradient"></div><span>0</span><div class="legend-gradient reverse"></div><span>+{{ Math.abs(mapLayer.scale_max).toFixed(3) }}</span><small>{{ mapLayer.slope_unit }}</small></div>
         <div v-if="mapLoading" class="map-loading">{{ t.loadingMap }}</div>
         <div class="map-attribution">Basemap: NASA GIBS Blue Marble. Trend overlay: {{ activeVariable?.source }}.</div>
 
@@ -705,14 +875,30 @@ onMounted(async () => {
         <article><span class="method-index">02</span><h2>{{ t.mk }} + Sen</h2><p>{{ t.m2 }}</p><span class="method-formula">Median of pairwise slopes</span></article>
         <article><span class="method-index">03</span><h2>{{ t.hr }} + FDR</h2><p>{{ t.m3 }}</p><span class="method-formula">BH false discovery rate · α = 0.10</span></article>
       </div>
+      <div class="method-detail-grid">
+        <article class="validation-card"><h2>{{ t.deseasoned }}</h2><p>{{ t.seasonalityMethod }}</p></article>
+        <article class="validation-card"><h2>{{ t.pettittTitle }}</h2><p>{{ t.breakMethod }}</p></article>
+      </div>
       <article class="validation-card"><span class="eyebrow">{{ t.validation }}</span><p>{{ t.validation }}</p><a href="https://data.giss.nasa.gov/gistemp/data_v4.html" target="_blank" rel="noreferrer">NASA GISTEMP v4 data and methods ↗</a></article>
+      <article class="validation-card method-references"><h2>{{ t.references }}</h2><ul>
+        <li><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html" target="_blank" rel="noreferrer">SciPy · linear regression and t test</a></li>
+        <li><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.theilslopes.html" target="_blank" rel="noreferrer">SciPy · Theil–Sen slope</a></li>
+        <li><a href="https://github.com/mmhs013/pyMannKendall" target="_blank" rel="noreferrer">pyMannKendall · Mann–Kendall and Hamed–Rao</a></li>
+        <li><a href="https://doi.org/10.1016/S0022-1694(97)00125-X" target="_blank" rel="noreferrer">Hamed &amp; Rao (1998) · modified Mann–Kendall test</a></li>
+        <li><a href="https://www.statsmodels.org/stable/generated/statsmodels.stats.multitest.multipletests.html" target="_blank" rel="noreferrer">Statsmodels · multiple-testing correction</a></li>
+        <li><a href="https://github.com/mmhs013/pyHomogeneity" target="_blank" rel="noreferrer">pyHomogeneity · Pettitt test reference implementation</a></li>
+      </ul></article>
       <article class="validation-card"><h2>{{ t.limitations }}</h2><p>{{ activeVariable?.limitations }}</p><p>{{ t.disclaimer }}</p></article>
     </main>
 
     <main v-if="page === 'about'" class="content-page about-page">
-      <span class="brand-mark large" aria-hidden="true">◎</span><h1>{{ t.aboutTitle }}</h1><p>{{ t.aboutText }}</p>
+      <div class="content-heading"><span class="eyebrow">{{ t.footerProject }}</span><h1>{{ t.aboutTitle }}</h1><p>{{ t.aboutText }}</p></div>
       <section class="validation-card"><h2>{{ t.notOfficial }}</h2><p>{{ locale === 'fr' ? 'L’application calcule des tendances descriptives sur les séries NASA prétraitées. Elle ne fournit ni prévision ni attribution causale.' : 'The application calculates descriptive trends from processed NASA records. It does not provide forecasts or causal attribution.' }}</p><p>{{ t.disclaimer }}</p></section>
-      <section class="validation-card"><h2>{{ t.data }} · NASA</h2><ul class="credits-list"><li v-for="item in catalogVariables" :key="item.id"><span>{{ locale === 'fr' ? item.name_fr : item.name }} · {{ item.source }} <small>({{ statusLabel(item.status) }})</small></span><a v-if="item.doi" :href="`https://doi.org/${item.doi}`" target="_blank" rel="noreferrer">{{ item.doi }} ↗</a></li></ul><a href="https://data.giss.nasa.gov/gistemp/data_v4.html" target="_blank" rel="noreferrer">NASA GISTEMP v4 source ↗</a></section>
+      <section class="validation-card"><h2>{{ t.data }} · NASA</h2><p>{{ t.dataScope }}</p><ul class="credits-list"><li v-for="item in catalogVariables" :key="item.id"><span><strong>{{ locale === 'fr' ? item.name_fr : item.name }}</strong> · {{ item.source }} <small>{{ statusLabel(item.status) }} · {{ item.period }}<span v-if="item.short_name"> · CMR: {{ item.short_name }}</span></small></span><a v-if="item.doi" :href="`https://doi.org/${item.doi}`" target="_blank" rel="noreferrer">DOI ↗</a></li></ul></section>
+      <section class="validation-card"><h2>{{ t.supportingData }}</h2><ul class="credits-list">
+        <li><span><strong>NASA GIBS · Blue Marble: Next Generation</strong><small>{{ t.basemapRole }}</small></span><a href="https://nasa-gibs.github.io/gibs-api-docs/access-basics/" target="_blank" rel="noreferrer">GIBS ↗</a></li>
+        <li><span><strong>NASA GISS · Published global monthly temperature series</strong><small>{{ t.validationRole }}</small></span><a href="https://data.giss.nasa.gov/gistemp/data_v4.html" target="_blank" rel="noreferrer">GISTEMP data ↗</a></li>
+      </ul><a href="https://science.nasa.gov/earth/earth-observatory/blue-marble-next-generation/" target="_blank" rel="noreferrer">NASA Blue Marble product background ↗</a></section>
     </main>
 
     <div v-if="showExport" class="modal-backdrop" role="presentation" @click.self="showExport = false">
@@ -730,16 +916,17 @@ onMounted(async () => {
         <div class="dialog-top"><span class="eyebrow">{{ t.guided }}</span><button class="icon-button" :aria-label="t.close" @click="showWizard = false">×</button></div>
         <div class="wizard-progress"><span v-for="step in 3" :key="step" :class="{ filled: step <= wizardStep }"></span></div>
         <span class="step-label">{{ locale === 'en' ? 'STEP' : 'ÉTAPE' }} {{ wizardStep }} / 3</span>
-        <template v-if="wizardStep === 1"><h2 id="wizard-title">{{ t.theme }}</h2><div class="choice-grid"><button v-for="choice in [['climate', t.themeClimate], ['water', t.themeWater], ['vegetation', t.themePlants], ['air', t.themeAir]]" :key="choice[0]" :class="{ chosen: wizardTheme === choice[0] }" @click="wizardTheme = choice[0]">{{ choice[1] }}</button></div></template>
+        <template v-if="wizardStep === 1"><h2 id="wizard-title">{{ t.theme }}</h2><div class="choice-grid"><button v-for="choice in wizardThemeOptions" :key="choice.id" :class="{ chosen: wizardTheme === choice.id }" @click="chooseWizardTheme(choice.id)">{{ choice.label }}</button></div></template>
         <template v-else-if="wizardStep === 2"><h2 id="wizard-title">{{ t.where }}</h2><label class="field-label" for="wizard-place">{{ t.place }}</label><input id="wizard-place" v-model="wizardPlace" class="text-input" placeholder="e.g. Amazon" /><div class="quick-places"><button v-for="region in regions" :key="region.id" @click="wizardPlace = locale === 'fr' ? region.name_fr : region.name">{{ locale === 'fr' ? region.name_fr : region.name }}</button></div></template>
-        <template v-else><h2 id="wizard-title">{{ t.variable }}</h2><div class="wizard-variable"><strong>{{ wizardVariable?.[locale === 'en' ? 'name' : 'name_fr'] }}</strong><p>{{ wizardVariable?.[locale === 'en' ? 'definition' : 'definition_fr'] }}</p><span>{{ wizardVariable?.source }}</span><p v-if="!wizardVariableReady" class="wizard-pending">{{ wizardVariableId === 'omi_no2' ? t.qualityPending : t.variablePending }}</p></div></template>
-        <div class="dialog-actions"><button class="button secondary" :disabled="wizardStep === 1" @click="wizardStep--">{{ locale === 'en' ? 'Back' : 'Retour' }}</button><button class="button primary" @click="wizardNext">{{ wizardStep === 3 ? t.apply : locale === 'en' ? 'Continue' : 'Continuer' }} <span aria-hidden="true">→</span></button></div>
+        <template v-else><h2 id="wizard-title">{{ t.variable }}</h2><div class="wizard-variable-options"><button v-for="item in wizardVariables" :key="item.id" type="button" :disabled="!isWizardVariableReady(item.id)" :class="{ chosen: wizardVariableId === item.id }" @click="wizardVariableId = item.id"><span><strong>{{ locale === 'en' ? item.name : item.name_fr }}</strong><small>{{ item.unit }} · {{ item.source }} · {{ item.period }}</small><small v-if="!isWizardVariableReady(item.id)" class="wizard-pending">{{ statusLabel(item.status) }} · {{ item.status_detail }}</small></span><b v-if="wizardVariableId === item.id" aria-hidden="true">✓</b></button><p v-if="!wizardVariables.length" class="field-help">{{ t.noAvailableVariables }}</p></div><div v-if="wizardVariable" class="wizard-variable"><p>{{ locale === 'en' ? wizardVariable.definition : wizardVariable.definition_fr }}</p></div></template>
+        <div class="dialog-actions"><button class="button secondary" :disabled="wizardStep === 1" @click="wizardStep--">{{ locale === 'en' ? 'Back' : 'Retour' }}</button><button class="button primary" :disabled="wizardStep === 3 && !wizardVariableReady" @click="wizardNext">{{ wizardStep === 3 ? t.apply : locale === 'en' ? 'Continue' : 'Continuer' }} <span aria-hidden="true">→</span></button></div>
       </section>
     </div>
 
     <div v-if="showDemos" class="modal-backdrop" role="presentation" @click.self="showDemos = false">
       <section class="dialog demos-dialog" role="dialog" aria-modal="true" aria-labelledby="demos-title">
         <div class="dialog-top"><div><span class="eyebrow">{{ t.guided }}</span><h2 id="demos-title">{{ t.demoTitle }}</h2></div><button class="icon-button" :aria-label="t.close" @click="showDemos = false">×</button></div>
+        <p v-if="demoError" class="demo-error" role="alert">{{ demoError }}</p>
         <button class="demo-option" @click="startDemo('arctic')"><span class="demo-number">01</span><span><strong>{{ locale === 'en' ? 'Arctic amplification' : 'Amplification arctique' }}</strong><small>70–90°N · GISTEMP v4 · full record</small></span><span>→</span></button>
         <button class="demo-option" @click="startDemo('amazon')"><span class="demo-number">02</span><span><strong>{{ locale === 'en' ? 'Tropical forest region' : 'Forêt tropicale' }}</strong><small>Amazon example area · GISTEMP v4</small></span><span>→</span></button>
         <p class="dialog-note">{{ locale === 'en' ? 'All example series use the NASA GISTEMP v4 record:' : 'Toutes les séries d’exemple utilisent les données NASA GISTEMP v4 :' }} <a href="https://data.giss.nasa.gov/gistemp/" target="_blank" rel="noreferrer">NASA GISS</a>. {{ locale === 'en' ? 'Arctic context:' : 'Contexte arctique :' }} <a href="https://doi.org/10.1029/2021GL094086" target="_blank" rel="noreferrer">England et al. (2021)</a>.</p>

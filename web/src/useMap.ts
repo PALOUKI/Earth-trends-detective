@@ -151,6 +151,9 @@ export function useMap(
     instance.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
     instance.on('load', () => {
       if (selectedLayer.value) applyTrendLayers(instance, selectedLayer.value)
+      // The map is recreated when navigating from the landing page. Reapply the
+      // current selection after its style and raster layers have finished loading.
+      showSelectedRegion(instance, selectedBounds.value)
     })
     instance.on('click', (event: MapMouseEvent) => {
       if (ignoreNextClick) {

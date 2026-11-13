@@ -145,6 +145,7 @@ Updated: 2026-11-13
 - [x] Replaced the CUAHSI-only manual CSV path with an in-app station workflow: choose a predefined region, measurement concept and date range; query HIS Central; retrieve a selected station's WaterOneFlow observations; aggregate and analyze them through the existing monthly statistics path. The UI identifies results as station observations and states that stations can be near (not necessarily inside) the selected rectangle.
 - [x] Verified the provider calls against live CUAHSI endpoints: the Amazon / `Discharge, stream` catalog query returned Brazil_UCB streamflow metadata (`m^3/s`), and a `GetValues` request returned observations in an escaped WaterML XML response. Added parser, URL-scheme/host, and API input-validation tests.
 - [ ] Giovanni, NASA Hydrology Time Series, AppEEARS, and NOAA CDO remain portal links plus manual CSV import. Their portal-specific exports are not automated, and some output formats may require conversion; this is a known usability gap. NOAA direct API remains contingent on a project token.
+- [x] Added [`PITCH_FR.md`](PITCH_FR.md): a plain-French oral pitch, an application demo route, verified local NDVI comparison example, likely jury questions, and current limitations. Catalog and comparison values were checked against the local API on 2026-11-13.
 - [ ] AI remains optional in the official challenge. If pursued, ground suggestions strictly in the verified catalogue and sourced context; do not generate scientific results or causal claims.
 
 ## M0 acceptance summary

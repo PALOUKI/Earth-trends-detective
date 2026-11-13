@@ -43,6 +43,8 @@ class VariableInfo(BaseModel):
     period: str
     limitations: str
     windows: list[str]
+    data_start: str | None = None
+    data_end: str | None = None
 
 
 class Suggestion(BaseModel):

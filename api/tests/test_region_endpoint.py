@@ -51,14 +51,42 @@ def test_region_endpoint_returns_trend_summary_from_data(tmp_path, monkeypatch) 
                 },
             )
             point = await client.get("/api/point?lat=-0.9&lon=-0.9")
+            unavailable_region = await client.post(
+                "/api/region",
+                json={
+                    "variable": "gistemp_tas_anom",
+                    "bounds": [-2, -2, 2, 2],
+                    "start": "2015-01",
+                    "label": "Test region",
+                },
+            )
+            unavailable_point = await client.get(
+                "/api/point?lat=-0.9&lon=-0.9&start=2015-01"
+            )
             comparison = await client.get(
                 "/api/compare?variable=gistemp_tas_anom&a=amazon&b=sahara"
             )
             docs = await client.get("/docs")
             suggestions = await client.get("/api/suggest?theme=climate&place=Amazon")
-            return regional, point, comparison, docs, suggestions
+            return (
+                regional,
+                point,
+                unavailable_region,
+                unavailable_point,
+                comparison,
+                docs,
+                suggestions,
+            )
 
-    response, point, comparison, docs, suggestions = asyncio.run(send_request())
+    (
+        response,
+        point,
+        unavailable_region,
+        unavailable_point,
+        comparison,
+        docs,
+        suggestions,
+    ) = asyncio.run(send_request())
     payload = response.json()
 
     assert response.status_code == 200
@@ -75,6 +103,10 @@ def test_region_endpoint_returns_trend_summary_from_data(tmp_path, monkeypatch) 
     assert point.status_code == 200
     assert point.json()["location"] == {"lat": -1.0, "lon": -1.0}
     assert point.json()["period"] == {"start": "2000-01", "end": "2009-12"}
+    assert unavailable_region.status_code == 422
+    assert "2000-01 to 2009-12" in unavailable_region.json()["detail"]
+    assert unavailable_point.status_code == 422
+    assert "No observations are available" in unavailable_point.json()["detail"]
     assert comparison.status_code == 200
     assert set(comparison.json()) == {"a", "b"}
     assert docs.status_code == 200

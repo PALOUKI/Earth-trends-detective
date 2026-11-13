@@ -31,6 +31,7 @@ def test_catalog_suggestions_and_regions_have_contract_fields() -> None:
     assert variables.status_code == regions.status_code == suggestions.status_code == 200
     assert variables.json()[0]["id"] == "gistemp_tas_anom"
     assert "definition" in variables.json()[0]
+    assert variables.json()[0]["data_start"] <= variables.json()[0]["data_end"]
     assert regions.json()[0]["geometry_type"] == "illustrative_rectangle"
     gpm = next(item for item in catalog.json() if item["id"] == "gpm_precipitation")
     assert suggestions.json()[0]["variable"] == "gpm_precipitation"

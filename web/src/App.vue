@@ -54,6 +54,7 @@ const copy = {
     place: 'Study area', selectRegion: 'Choose a region', draw: 'Draw a rectangle',
     drawing: 'Drag on the map to draw', period: 'Analysis period', full: 'Full record',
     since2010: 'Since 2010', since2015: 'Since 2015', apply: 'Analyze region',
+    periodUnavailable: (requested: string, start: string, end: string) => `No observations are available for “${requested}”. This variable covers ${start} to ${end}. Choose “Full record” or a period within that range.`,
     chart: 'Regional time series', summary: 'Trend summary', loading: 'Analyzing selected variable…',
     loadingMap: 'Loading trend layer…', rate: 'Linear rate', confidence: '95% confidence interval',
     pValueHelp: 'A p-value measures how unusual these data would be if there were no trend; it is not the probability that the result is true.',
@@ -130,6 +131,7 @@ const copy = {
     place: 'Zone étudiée', selectRegion: 'Choisir une région', draw: 'Dessiner un rectangle',
     drawing: 'Tracer sur la carte', period: 'Période d’analyse', full: 'Toute la série',
     since2010: 'Depuis 2010', since2015: 'Depuis 2015', apply: 'Analyser la région',
+    periodUnavailable: (requested: string, start: string, end: string) => `Aucune observation n’est disponible pour « ${requested} ». Cette variable couvre ${start} à ${end}. Choisissez « Toute la série » ou une période comprise dans cet intervalle.`,
     chart: 'Série temporelle régionale', summary: 'Résumé de tendance', loading: 'Analyse de la variable…',
     loadingMap: 'Chargement de la carte…', rate: 'Taux linéaire', confidence: 'Intervalle de confiance à 95 %',
     pValueHelp: 'La valeur p indique à quel point ces données seraient inhabituelles en l’absence de tendance ; ce n’est pas la probabilité que le résultat soit vrai.',
@@ -409,6 +411,17 @@ async function loadMap() {
 async function runAnalysis() {
   if (!isAnalysisReady.value) {
     analysis.value = null
+    return
+  }
+  const requestedStart = periodStart[period.value]
+  const coverageStart = activeVariable.value?.data_start
+  const coverageEnd = activeVariable.value?.data_end
+  if (requestedStart && coverageEnd && requestedStart > coverageEnd) {
+    error.value = t.value.periodUnavailable(
+      period.value === '2010-fin' ? t.value.since2010 : t.value.since2015,
+      coverageStart ?? 'unknown',
+      coverageEnd,
+    )
     return
   }
   loading.value = true

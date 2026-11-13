@@ -277,6 +277,37 @@ def _dataset_path(variable: str) -> Path:
     return DATASET_PATH if variable == "gistemp_tas_anom" else VARIABLE_CONFIG[variable]["path"]
 
 
+def _validate_requested_period(
+    dataset_path: Path, start: str | None, end: str | None
+) -> tuple[str, str]:
+    with xr.open_zarr(dataset_path) as dataset:
+        times = dataset.time.values
+    if not times.size:
+        raise HTTPException(status_code=503, detail="This dataset contains no time records.")
+    available_start = np.datetime_as_string(times[0], unit="M")
+    available_end = np.datetime_as_string(times[-1], unit="M")
+    requested_start = np.datetime64(start, "M") if start else np.datetime64(available_start, "M")
+    requested_end = np.datetime64(end, "M") if end else np.datetime64(available_end, "M")
+    if requested_start > np.datetime64(available_end, "M") or requested_end < np.datetime64(
+        available_start, "M"
+    ):
+        requested_label = f"{start or available_start} to {end or available_end}"
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"No observations are available for {requested_label}. This dataset covers "
+                f"{available_start} to {available_end}. Choose a period within the available "
+                "record."
+            ),
+        )
+    if requested_start > requested_end:
+        raise HTTPException(
+            status_code=422,
+            detail="The analysis period is invalid: its start date is after its end date.",
+        )
+    return available_start, available_end
+
+
 def _format_result(
     result: dict[str, object], label: str, source: str, variable_id: str = "gistemp_tas_anom"
 ) -> dict[str, object]:
@@ -533,6 +564,8 @@ async def catalog() -> list[dict[str, object]]:
                 if times.size:
                     first = np.datetime_as_string(times[0], unit="M")
                     last = np.datetime_as_string(times[-1], unit="M")
+                    item["data_start"] = first
+                    item["data_end"] = last
                     item["period"] = f"{first} to {last}; monthly"
             tile_meta = Path("data/tiles") / item["id"] / "full" / "palette.json"
             trend_data = Path("data/processed") / item["id"] / "trend_full.zarr"
@@ -629,6 +662,7 @@ async def region_analysis(request: RegionRequest) -> dict[str, object]:
             status_code=503,
             detail="This variable's processed time series is not installed.",
         )
+    _validate_requested_period(dataset_path, request.start, request.end)
     try:
         result = analyze_region(
             request.bounds,
@@ -658,6 +692,7 @@ async def point_analysis(
             status_code=503,
             detail="This variable's processed time series is not installed.",
         )
+    _validate_requested_period(dataset_path, start, end)
     with xr.open_zarr(dataset_path) as dataset:
         selected = dataset[str(config["field"])].sel(lat=lat, lon=lon, method="nearest")
         if start:

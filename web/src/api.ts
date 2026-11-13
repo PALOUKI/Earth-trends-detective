@@ -8,6 +8,8 @@ export interface VariableInfo {
   period: string
   limitations: string
   windows?: string[]
+  data_start?: string
+  data_end?: string
   status?: 'analysis_ready' | 'sample_downloaded' | 'acquiring' | 'series_processed' | 'blocked_eula'
   status_detail?: string
   source?: string

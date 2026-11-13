@@ -767,7 +767,7 @@ onMounted(async () => {
       <aside class="control-panel">
         <div class="panel-head">
           <div><span class="eyebrow">{{ t.parameters }}</span><span class="dataset-pill">{{ activeVariable?.source }}</span></div>
-          <button class="icon-button" :aria-label="t.guided" title="Guided investigation" @click="beginWizard">?</button>
+          <button class="icon-button guided-help-button" :aria-label="t.guided" :title="t.guided" @click="beginWizard">?</button>
         </div>
         <div class="panel-scroll">
           <section class="parameter-card">

@@ -77,6 +77,24 @@ export interface MapLayer {
   }
 }
 
+export interface ExternalSeriesResult {
+  variable: string
+  label: string
+  source: string
+  unit: string
+  rate_unit: string
+  period: { start: string; end: string }
+  time: string[]
+  value: Array<number | null>
+  seasonal: Array<number | null>
+  anomaly: Array<number | null>
+  trend: TrendInfo
+  significant: boolean
+  summary: { en: string; fr: string }
+  caveats: string[]
+  metadata: { source: string; n_months: number }
+}
+
 const apiBase = import.meta.env.VITE_API_BASE ?? ''
 
 async function getJson<T>(path: string): Promise<T> {
@@ -92,6 +110,8 @@ export const api = {
   variables: () => getJson<VariableInfo[]>('/api/variables'),
   catalog: () => getJson<VariableInfo[]>('/api/catalog'),
   regions: () => getJson<RegionInfo[]>('/api/regions'),
+  analyzeExternal: (payload: { csv_text: string; date_column: string; value_column: string; label: string; source: string; unit: string }) =>
+    postJson<ExternalSeriesResult>('/api/external/analyze', payload),
   suggest: (theme: string, place: string) =>
     getJson<Array<{ variable: string; name: string; definition: string; available: boolean; message: string; region_id?: string | null }>>(
       `/api/suggest?theme=${encodeURIComponent(theme)}&place=${encodeURIComponent(place)}`,

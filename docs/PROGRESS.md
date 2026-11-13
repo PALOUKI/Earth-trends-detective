@@ -1,6 +1,6 @@
 # Project progress
 
-Updated: 2026-11-02
+Updated: 2026-11-13
 
 ## Current milestone: M1b — intégration multi-variable (données et API locales prêtes)
 
@@ -65,7 +65,7 @@ Updated: 2026-11-02
 - [x] Grid weighted and published global linear slopes agree to 0.0000008 K/year (0.0210564 vs 0.0210556 K/year).
 - [x] Regional grid results show 0.06926 K/year for 70–90°N and 0.03408 K/year for 30–60°N, matching the published qualitative Arctic amplification pattern (England et al., 2021; DOI 10.1029/2021GL094086).
 - [x] Reproducible code and the expected/obtained summary are in `notebooks/01_validation_gistemp.ipynb`; NASA source and access date are in `docs/DATA_SOURCES.md`.
-- [ ] Live [Giovanni no-script catalog](https://giovanni.gsfc.nasa.gov/giovanni/daac-bin/noscript.cgi) checked on 2026-11-01; an exact `GISTEMP` search returned no result. Since section 2 requires one GISTEMP variable until deployment, no different dataset was substituted. Giovanni validation is blocked by the absence of the selected product and M3 is not accepted.
+- [ ] Giovanni validation remains incomplete. An exact `GISTEMP` search in the no-script catalog returned no result on 2026-11-01, but that alone does not establish that validation is impossible. The challenge resources received on 2026-11-13 describe Giovanni as a source of area-averaged time series; next identify compatible products for the variables actually analyzed and document any differences in region, period, weighting, masks, and preprocessing. See [`CHALLENGE_RESOURCES.md`](CHALLENGE_RESOURCES.md). M3 remains partial until a compatible comparison or a specific documented incompatibility is established.
 
 ## M4 — map products and visual encoding (XYZ generation implemented; depends on incomplete M2 map statistics)
 
@@ -131,6 +131,19 @@ Updated: 2026-11-02
 - [x] Added API and web Dockerfiles, Compose topology, Caddy HTTPS routing, persistent certificate storage, restart policies, and read-only processed-data mounts. `docker compose config` succeeds.
 - [x] `make deploy` invokes `deploy/deploy.sh`, which sends only processed Zarr/COG/XYZ products for all selected variables over SSH/rsync, builds Compose remotely, and checks the HTTPS health endpoint.
 - [ ] Remote execution remains blocked until the host, SSH user/key access, public DNS domain, and inbound 80/443 status are supplied. Deployed GISTEMP data do not require Earthdata credentials.
+
+## Challenge Resources update — 2026-11-13
+
+- [x] Added the challenge Resources tab supplied by the project owner to [`CHALLENGE_RESOURCES.md`](CHALLENGE_RESOURCES.md), with the URLs, their intended use, and caveats on third-party resources.
+- [x] Checked supplied resource URLs on 2026-11-13; one CSA data portal timed out during the page fetch, so its suitability is unverified. A successful page load is not evidence that a specific collection is usable.
+- [x] Added a bilingual resources workflow for Giovanni, NASA Hydrology Time Series, AppEEARS, NOAA CDO, and CUAHSI HydroClient. It links to the real provider interfaces and accepts downloaded CSV series for the common monthly analysis path.
+- [x] Added a bounded CSV parser and external series API: date/value columns are selected by the user, observations are aggregated to monthly means, gaps are preserved, and OLS/CI/t, Sen, Mann-Kendall, Hamed-Rao and a plain-language summary are returned. Uploaded source/unit metadata is explicitly marked user supplied.
+- [x] Added a 36-calendar-month minimum and tests for aggregation, gaps, required duration, CSV field selection, and API response contract.
+- [ ] Complete a live Giovanni cross-check against compatible local variables. Uploading a Giovanni series currently runs the same analysis but does not by itself prove agreement with the local result.
+- [ ] NOAA CDO's direct API requires a user-issued token. Current flow uses the CDO web portal and CSV import; optional direct API access awaits a project NOAA token and secure configuration.
+- [ ] AppEEARS and the NASA Hydrology Time Series tool are linked as acquisition tools; exact sample products/exports still need a live end-to-end walkthrough.
+- [ ] CUAHSI HydroClient is available in the shared import workflow. Its station time series are clearly distinct from NASA gridded regional means; an automatic station search/map remains future work.
+- [ ] AI remains optional in the official challenge. If pursued, ground suggestions strictly in the verified catalogue and sourced context; do not generate scientific results or causal claims.
 
 ## M0 acceptance summary
 

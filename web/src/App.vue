@@ -9,16 +9,17 @@ import { api } from './api'
 import { comparisonDirection, fittedLine, formatPValue, formatRate, stepMapZoom } from './trendUtils'
 import { variablesForTheme, type WizardTheme } from './wizardThemes'
 import { useMap } from './useMap'
+import ExternalSources from './ExternalSources.vue'
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent, LegendComponent])
 
 type Locale = 'en' | 'fr'
 type WindowId = 'full' | '2010-fin' | '2015-fin'
-type AppPage = 'home' | 'explore' | 'variables' | 'compare' | 'methods' | 'about'
+type AppPage = 'home' | 'explore' | 'variables' | 'compare' | 'resources' | 'methods' | 'about'
 
 const copy = {
   en: {
-    home: 'Home', variablesPage: 'Variables', comparePage: 'Compare',
+    home: 'Home', variablesPage: 'Variables', comparePage: 'Compare', resourcesPage: 'Data tools',
     homeTitle: 'Is the Earth changing where you live?',
     homeLead: 'Explore NASA Earth science data for a place you choose. Follow the time series, estimate a linear trend, and inspect its statistical evidence.',
     startInvestigation: 'Start investigating', browseVariables: 'Browse variables', watchVideo: 'Try a guided example',
@@ -94,7 +95,7 @@ const copy = {
     slopeLayer: 'OLS slope', nonsignificantLayer: 'dots = not significant', observations: 'months',
   },
   fr: {
-    home: 'Accueil', variablesPage: 'Variables', comparePage: 'Comparer',
+    home: 'Accueil', variablesPage: 'Variables', comparePage: 'Comparer', resourcesPage: 'Ressources',
     homeTitle: 'La Terre change-t-elle là où vous vivez ?',
     homeLead: 'Explorez les données NASA des sciences de la Terre pour un lieu de votre choix. Suivez la série temporelle, estimez une tendance linéaire et examinez les preuves statistiques.',
     startInvestigation: 'Commencer l’enquête', browseVariables: 'Parcourir les variables', watchVideo: 'Essayer un exemple guidé',
@@ -624,6 +625,7 @@ onMounted(async () => {
         <button :class="{ active: page === 'explore' }" @click="page = 'explore'">{{ t.explore }}</button>
         <button :class="{ active: page === 'variables' }" @click="page = 'variables'">{{ t.variablesPage }}</button>
         <button :class="{ active: page === 'compare' }" @click="page = 'compare'">{{ t.comparePage }}</button>
+        <button :class="{ active: page === 'resources' }" @click="page = 'resources'">{{ t.resourcesPage }}</button>
         <button :class="{ active: page === 'methods' }" @click="page = 'methods'">{{ t.methods }}</button>
         <button :class="{ active: page === 'about' }" @click="page = 'about'">{{ t.about }}</button>
       </nav>
@@ -757,6 +759,8 @@ onMounted(async () => {
       </section>
       <p v-if="comparison" class="compare-caveat">{{ t.compareCaveat }}</p>
     </main>
+
+    <ExternalSources v-else-if="page === 'resources'" :locale="locale" />
 
     <main v-if="page === 'explore'" class="workspace">
       <aside class="control-panel">

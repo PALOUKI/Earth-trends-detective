@@ -13,6 +13,15 @@ class RegionRequest(BaseModel):
     label: str = "Selected region"
 
 
+class ExternalSeriesRequest(BaseModel):
+    csv_text: str = Field(max_length=5_000_000)
+    date_column: str = Field(min_length=1, max_length=120)
+    value_column: str = Field(min_length=1, max_length=120)
+    label: str = Field(min_length=1, max_length=160)
+    source: str = Field(min_length=1, max_length=80)
+    unit: str = Field(min_length=1, max_length=40)
+
+
 class VariableInfo(BaseModel):
     id: str
     name: str

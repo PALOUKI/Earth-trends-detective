@@ -13,9 +13,11 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
+from api.app.external_series import analyze_monthly_observations, parse_csv_series
 from api.app.schemas import (
     AnalysisResponse,
     ComparisonResponse,
+    ExternalSeriesRequest,
     RegionDefinition,
     RegionRequest,
     Suggestion,
@@ -339,6 +341,72 @@ def _from_values(
 @app.get("/api/health")
 async def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/api/external/analyze")
+async def analyze_external_series(request: ExternalSeriesRequest) -> dict[str, object]:
+    """Analyze monthly CSV exports from NASA Giovanni/AppEEARS or NOAA CDO."""
+    source_names = {
+        "giovanni": "NASA GES DISC Giovanni",
+        "appeears": "NASA AppEEARS",
+        "hydrology": "NASA GES DISC Hydrology Time Series",
+        "noaa_cdo": "NOAA Climate Data Online",
+        "cuahsi": "CUAHSI HydroClient",
+    }
+    if request.source not in source_names:
+        raise HTTPException(status_code=422, detail="Select a supported data source.")
+    try:
+        dates, values = parse_csv_series(
+            request.csv_text, request.date_column, request.value_column
+        )
+        series = analyze_monthly_observations(dates, values)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    rate_unit = f"{request.unit}/year"
+    stats = series.statistics
+    label = request.label.strip()
+    summary = make_summary(
+        label,
+        stats["slope_ols"],
+        stats["slope_ols_lo"],
+        stats["slope_ols_hi"],
+        stats["p_ols"],
+        stats["p_mk"],
+        rate_unit,
+        None,
+        label,
+        label,
+    )
+    source = source_names[request.source]
+    return _clean({
+        "variable": f"external_{request.source}",
+        "label": label,
+        "source": source,
+        "unit": request.unit,
+        "rate_unit": rate_unit,
+        "period": {"start": series.start, "end": series.end},
+        "time": series.dates,
+        "value": series.values,
+        "seasonal": series.seasonal,
+        "anomaly": series.anomalies,
+        "trend": stats,
+        "significant": bool(stats["p_ols"] is not None and stats["p_ols"] < 0.05),
+        "summary": summary,
+        "caveats": [
+            "External observations were aggregated to monthly means before analysis.",
+            (
+                "Missing calendar months remain missing; seasonal adjustment uses available "
+                "observations."
+            ),
+            (
+                "The uploaded file's source metadata and units were supplied by the user "
+                "and were not independently verified."
+            ),
+            "Statistical association does not establish cause.",
+        ],
+        "metadata": {"source": source, "n_months": series.n_months},
+    })
 
 
 @app.get("/api/variables", response_model=list[VariableInfo])

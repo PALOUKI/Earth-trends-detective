@@ -216,6 +216,8 @@ select { padding-right: 28px; background-image: linear-gradient(45deg, transpare
 .choice-grid button:hover, .choice-grid button.chosen { color: var(--blue); border-color: #7598cc; background: #f3f7ff; }
 .quick-places { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
 .quick-places button { min-height: 30px; padding: 6px 9px; font-size: 10px; }
+.wizard-place-display { color: #687789; background: #f1f3f6; cursor: default; }
+.quick-places button.chosen { border-color: #7598cc; color: #17345f; background: #f3f7ff; }
 .wizard-variable-options { display: grid; gap: 7px; max-height: 290px; overflow-y: auto; }
 .wizard-variable-options button { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: #fff; text-align: left; }
 .wizard-variable-options button:hover:not(:disabled), .wizard-variable-options button.chosen { border-color: #7598cc; background: #f3f7ff; }

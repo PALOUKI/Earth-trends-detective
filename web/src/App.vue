@@ -66,7 +66,7 @@ const copy = {
     raw: 'Monthly values', deseasoned: 'Deseasonalized', trend: 'Linear trend',
     guided: 'Guided investigation', demo: 'Try a guided example', demoTitle: 'Guided examples',
     startDemo: 'Explore example', next: 'Next step', finish: 'Show result', close: 'Close',
-    wizardPlaceNotFound: 'That place did not match a predefined region. Select an example region or draw your own area on the map.',
+    wizardPlaceNotFound: 'The selected example region is unavailable. Choose one of the listed regions.',
     demoDataUnavailable: 'The demo data could not be loaded. Please try again.', demoRegionUnavailable: 'The Amazon example region is missing from the region list.',
     theme: 'What interests you?', themeClimate: 'Climate', themeWater: 'Water',
     themePlants: 'Vegetation', themeAir: 'Atmosphere & air quality', where: 'Where should we look?',
@@ -142,7 +142,7 @@ const copy = {
     raw: 'Valeurs mensuelles', deseasoned: 'Désaisonnalisée', trend: 'Tendance linéaire',
     guided: 'Parcours guidé', demo: 'Voir un exemple guidé', demoTitle: 'Exemples guidés',
     startDemo: 'Explorer cet exemple', next: 'Étape suivante', finish: 'Voir le résultat', close: 'Fermer',
-    wizardPlaceNotFound: 'Ce lieu ne correspond à aucune région prédéfinie. Choisissez une région proposée ou dessinez votre zone sur la carte.',
+    wizardPlaceNotFound: 'La région choisie est indisponible. Choisissez une région dans la liste.',
     demoDataUnavailable: 'Les données nécessaires à la démo n’ont pas pu être chargées. Réessayez.', demoRegionUnavailable: 'La région d’exemple de l’Amazonie est absente de la liste des régions.',
     theme: 'Quel thème vous intéresse ?', themeClimate: 'Climat', themeWater: 'Eau',
     themePlants: 'Végétation', themeAir: 'Atmosphère et qualité de l’air', where: 'Où regarder ?',
@@ -244,7 +244,11 @@ const compareB = ref('sahara')
 const showExport = ref(false)
 const showWizard = ref(false)
 const wizardStep = ref(1)
-const wizardPlace = ref('Amazon')
+const wizardRegionId = ref('amazon')
+const wizardRegion = computed(() => regions.value.find((item) => item.id === wizardRegionId.value))
+const wizardPlace = computed(() => wizardRegion.value
+  ? locale.value === 'fr' ? wizardRegion.value.name_fr : wizardRegion.value.name
+  : '')
 const showDemos = ref(false)
 const demoStep = ref(0)
 const activeDemo = ref('')
@@ -485,10 +489,7 @@ async function wizardNext() {
     return
   }
   if (!wizardVariable.value || !wizardVariableReady.value) return
-  const suggestions = await api.suggest(wizardTheme.value, wizardPlace.value)
-  const query = wizardPlace.value.trim().toLowerCase()
-  const match = regions.value.find((item) => item.id === suggestions[0]?.region_id)
-    ?? regions.value.find((item) => `${item.id} ${item.name} ${item.name_fr}`.toLowerCase().includes(query))
+  const match = wizardRegion.value
   if (!match) {
     showWizard.value = false
     page.value = 'explore'
@@ -921,7 +922,7 @@ onMounted(async () => {
         <div class="wizard-progress"><span v-for="step in 3" :key="step" :class="{ filled: step <= wizardStep }"></span></div>
         <span class="step-label">{{ locale === 'en' ? 'STEP' : 'ÉTAPE' }} {{ wizardStep }} / 3</span>
         <template v-if="wizardStep === 1"><h2 id="wizard-title">{{ t.theme }}</h2><div class="choice-grid"><button v-for="choice in wizardThemeOptions" :key="choice.id" :class="{ chosen: wizardTheme === choice.id }" @click="chooseWizardTheme(choice.id)">{{ choice.label }}</button></div></template>
-        <template v-else-if="wizardStep === 2"><h2 id="wizard-title">{{ t.where }}</h2><label class="field-label" for="wizard-place">{{ t.place }}</label><input id="wizard-place" v-model="wizardPlace" class="text-input" placeholder="e.g. Amazon" /><div class="quick-places"><button v-for="region in regions" :key="region.id" @click="wizardPlace = locale === 'fr' ? region.name_fr : region.name">{{ locale === 'fr' ? region.name_fr : region.name }}</button></div></template>
+        <template v-else-if="wizardStep === 2"><h2 id="wizard-title">{{ t.where }}</h2><label class="field-label" for="wizard-place">{{ t.place }}</label><input id="wizard-place" :value="wizardPlace" class="text-input wizard-place-display" readonly aria-readonly="true" /><div class="quick-places"><button v-for="region in regions" :key="region.id" :class="{ chosen: wizardRegionId === region.id }" @click="wizardRegionId = region.id">{{ locale === 'fr' ? region.name_fr : region.name }}</button></div></template>
         <template v-else><h2 id="wizard-title">{{ t.variable }}</h2><div class="wizard-variable-options"><button v-for="item in wizardVariables" :key="item.id" type="button" :disabled="!isWizardVariableReady(item.id)" :class="{ chosen: wizardVariableId === item.id }" @click="wizardVariableId = item.id"><span><strong>{{ locale === 'en' ? item.name : item.name_fr }}</strong><small>{{ item.unit }} · {{ item.source }} · {{ item.period }}</small><small v-if="!isWizardVariableReady(item.id)" class="wizard-pending">{{ statusLabel(item.status) }} · {{ item.status_detail }}</small></span><b v-if="wizardVariableId === item.id" aria-hidden="true">✓</b></button><p v-if="!wizardVariables.length" class="field-help">{{ t.noAvailableVariables }}</p></div><div v-if="wizardVariable" class="wizard-variable"><p>{{ locale === 'en' ? wizardVariable.definition : wizardVariable.definition_fr }}</p></div></template>
         <div class="dialog-actions"><button class="button secondary" :disabled="wizardStep === 1" @click="wizardStep--">{{ locale === 'en' ? 'Back' : 'Retour' }}</button><button class="button primary" :disabled="wizardStep === 3 && !wizardVariableReady" @click="wizardNext">{{ wizardStep === 3 ? t.apply : locale === 'en' ? 'Continue' : 'Continuer' }} <span aria-hidden="true">→</span></button></div>
       </section>

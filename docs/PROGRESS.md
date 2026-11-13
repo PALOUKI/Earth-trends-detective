@@ -136,13 +136,15 @@ Updated: 2026-11-13
 
 - [x] Added the challenge Resources tab supplied by the project owner to [`CHALLENGE_RESOURCES.md`](CHALLENGE_RESOURCES.md), with the URLs, their intended use, and caveats on third-party resources.
 - [x] Checked supplied resource URLs on 2026-11-13; one CSA data portal timed out during the page fetch, so its suitability is unverified. A successful page load is not evidence that a specific collection is usable.
-- [x] Added a bilingual resources workflow for Giovanni, NASA Hydrology Time Series, AppEEARS, NOAA CDO, and CUAHSI HydroClient. It links to the real provider interfaces and accepts downloaded CSV series for the common monthly analysis path.
+- [x] Added a bilingual resources workflow linking Giovanni, NASA Hydrology Time Series, AppEEARS, and NOAA CDO; downloaded CSV series from those portals can be imported for the common monthly analysis path.
 - [x] Added a bounded CSV parser and external series API: date/value columns are selected by the user, observations are aggregated to monthly means, gaps are preserved, and OLS/CI/t, Sen, Mann-Kendall, Hamed-Rao and a plain-language summary are returned. Uploaded source/unit metadata is explicitly marked user supplied.
 - [x] Added a 36-calendar-month minimum and tests for aggregation, gaps, required duration, CSV field selection, and API response contract.
 - [ ] Complete a live Giovanni cross-check against compatible local variables. Uploading a Giovanni series currently runs the same analysis but does not by itself prove agreement with the local result.
 - [ ] NOAA CDO's direct API requires a user-issued token. Current flow uses the CDO web portal and CSV import; optional direct API access awaits a project NOAA token and secure configuration.
 - [ ] AppEEARS and the NASA Hydrology Time Series tool are linked as acquisition tools; exact sample products/exports still need a live end-to-end walkthrough.
-- [ ] CUAHSI HydroClient is available in the shared import workflow. Its station time series are clearly distinct from NASA gridded regional means; an automatic station search/map remains future work.
+- [x] Replaced the CUAHSI-only manual CSV path with an in-app station workflow: choose a predefined region, measurement concept and date range; query HIS Central; retrieve a selected station's WaterOneFlow observations; aggregate and analyze them through the existing monthly statistics path. The UI identifies results as station observations and states that stations can be near (not necessarily inside) the selected rectangle.
+- [x] Verified the provider calls against live CUAHSI endpoints: the Amazon / `Discharge, stream` catalog query returned Brazil_UCB streamflow metadata (`m^3/s`), and a `GetValues` request returned observations in an escaped WaterML XML response. Added parser, URL-scheme/host, and API input-validation tests.
+- [ ] Giovanni, NASA Hydrology Time Series, AppEEARS, and NOAA CDO remain portal links plus manual CSV import. Their portal-specific exports are not automated, and some output formats may require conversion; this is a known usability gap. NOAA direct API remains contingent on a project token.
 - [ ] AI remains optional in the official challenge. If pursued, ground suggestions strictly in the verified catalogue and sourced context; do not generate scientific results or causal claims.
 
 ## M0 acceptance summary

@@ -14,7 +14,7 @@ The application is designed to make the analysis traceable: data products and th
 - Provides global trend tiles over a NASA GIBS Blue Marble basemap, with controls for layer visibility and trend-layer opacity.
 - Summarizes the variable, region, trend rate, and significance in plain language, with caveats about interpretation.
 - Supports regional comparison and data/map exports through the API.
-- Provides a shared resource workflow for Giovanni, NASA Hydrology Time Series, AppEEARS, NOAA CDO, and CUAHSI HydroClient: download a series from the provider and import its CSV for the same monthly trend analysis.
+- Provides a direct CUAHSI station search, retrieval, and monthly trend analysis by selected region and measurement. Giovanni, NASA Hydrology Time Series, AppEEARS, and NOAA CDO are linked as acquisition tools, with a CSV import fallback for downloaded series.
 
 ### Data availability
 

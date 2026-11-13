@@ -95,6 +95,22 @@ export interface ExternalSeriesResult {
   metadata: { source: string; n_months: number }
 }
 
+export interface CuahsiSeries {
+  id: string
+  site: string
+  location: string
+  variable: string
+  variable_code: string
+  unit: string
+  start: string
+  end: string
+  latitude: number
+  longitude: number
+  service: string
+  organization: string
+  value_count: number
+}
+
 const apiBase = import.meta.env.VITE_API_BASE ?? ''
 
 async function getJson<T>(path: string): Promise<T> {
@@ -112,6 +128,10 @@ export const api = {
   regions: () => getJson<RegionInfo[]>('/api/regions'),
   analyzeExternal: (payload: { csv_text: string; date_column: string; value_column: string; label: string; source: string; unit: string }) =>
     postJson<ExternalSeriesResult>('/api/external/analyze', payload),
+  cuahsiSearch: (payload: { bounds: [number, number, number, number]; start: string; end: string; keyword: string }) =>
+    postJson<CuahsiSeries[]>('/api/cuahsi/search', payload),
+  cuahsiAnalyze: (payload: { bounds: [number, number, number, number]; start: string; end: string; keyword: string; series_id: string }) =>
+    postJson<ExternalSeriesResult>('/api/cuahsi/analyze', payload),
   suggest: (theme: string, place: string) =>
     getJson<Array<{ variable: string; name: string; definition: string; available: boolean; message: string; region_id?: string | null }>>(
       `/api/suggest?theme=${encodeURIComponent(theme)}&place=${encodeURIComponent(place)}`,

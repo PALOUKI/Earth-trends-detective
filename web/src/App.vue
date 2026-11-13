@@ -760,7 +760,7 @@ onMounted(async () => {
       <p v-if="comparison" class="compare-caveat">{{ t.compareCaveat }}</p>
     </main>
 
-    <ExternalSources v-else-if="page === 'resources'" :locale="locale" />
+    <ExternalSources v-else-if="page === 'resources'" :locale="locale" :regions="regions" />
 
     <main v-if="page === 'explore'" class="workspace">
       <aside class="control-panel">

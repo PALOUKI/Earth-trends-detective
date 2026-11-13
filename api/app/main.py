@@ -3,9 +3,11 @@ from __future__ import annotations
 import csv
 import io
 import os
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Literal
 
+import httpx
 import numpy as np
 import xarray as xr
 from dotenv import load_dotenv
@@ -13,10 +15,13 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
+from api.app.cuahsi import retrieve_values, search_series
 from api.app.external_series import analyze_monthly_observations, parse_csv_series
 from api.app.schemas import (
     AnalysisResponse,
     ComparisonResponse,
+    CuahsiAnalysisRequest,
+    CuahsiSearchRequest,
     ExternalSeriesRequest,
     RegionDefinition,
     RegionRequest,
@@ -102,12 +107,8 @@ CATALOG = [
         "name": "MERRA-2 monthly evaporation flux",
         "name_fr": "Flux d'évaporation mensuel MERRA-2",
         "unit": "kg m-2 s-1",
-        "definition": (
-            "Monthly turbulent evaporation flux from the NASA MERRA-2 field EVAP."
-        ),
-        "definition_fr": (
-            "Flux mensuel d'évaporation turbulente du champ NASA MERRA-2 EVAP."
-        ),
+        "definition": ("Monthly turbulent evaporation flux from the NASA MERRA-2 field EVAP."),
+        "definition_fr": ("Flux mensuel d'évaporation turbulente du champ NASA MERRA-2 EVAP."),
         "period": "1980 onward in CMR; local 2000-01–2009-12 series pending",
         "limitations": "Model reanalysis, not a direct satellite measurement.",
         "source": "NASA GMAO MERRA-2 v5.12.4",
@@ -124,9 +125,7 @@ CATALOG = [
         "name": "GLDAS Noah monthly 0-10 cm soil moisture",
         "name_fr": "Humidité mensuelle du sol GLDAS Noah (0-10 cm)",
         "unit": "kg m-2",
-        "definition": (
-            "Monthly topsoil water content from GLDAS Noah field SoilMoi0_10cm_inst."
-        ),
+        "definition": ("Monthly topsoil water content from GLDAS Noah field SoilMoi0_10cm_inst."),
         "definition_fr": (
             "Contenu en eau du sol superficiel du champ GLDAS Noah SoilMoi0_10cm_inst."
         ),
@@ -158,8 +157,7 @@ CATALOG = [
         "short_name": "GPM_3IMERGM",
         "status": "acquiring",
         "status_detail": (
-            "Earthdata access is verified; source files and analysis products "
-            "are being prepared."
+            "Earthdata access is verified; source files and analysis products are being prepared."
         ),
     },
     {
@@ -379,34 +377,133 @@ async def analyze_external_series(request: ExternalSeriesRequest) -> dict[str, o
         label,
     )
     source = source_names[request.source]
-    return _clean({
-        "variable": f"external_{request.source}",
-        "label": label,
-        "source": source,
-        "unit": request.unit,
-        "rate_unit": rate_unit,
-        "period": {"start": series.start, "end": series.end},
-        "time": series.dates,
-        "value": series.values,
-        "seasonal": series.seasonal,
-        "anomaly": series.anomalies,
-        "trend": stats,
-        "significant": bool(stats["p_ols"] is not None and stats["p_ols"] < 0.05),
-        "summary": summary,
-        "caveats": [
-            "External observations were aggregated to monthly means before analysis.",
-            (
-                "Missing calendar months remain missing; seasonal adjustment uses available "
-                "observations."
+    return _clean(
+        {
+            "variable": f"external_{request.source}",
+            "label": label,
+            "source": source,
+            "unit": request.unit,
+            "rate_unit": rate_unit,
+            "period": {"start": series.start, "end": series.end},
+            "time": series.dates,
+            "value": series.values,
+            "seasonal": series.seasonal,
+            "anomaly": series.anomalies,
+            "trend": stats,
+            "significant": bool(stats["p_ols"] is not None and stats["p_ols"] < 0.05),
+            "summary": summary,
+            "caveats": [
+                "External observations were aggregated to monthly means before analysis.",
+                (
+                    "Missing calendar months remain missing; seasonal adjustment uses available "
+                    "observations."
+                ),
+                (
+                    "The uploaded file's source metadata and units were supplied by the user "
+                    "and were not independently verified."
+                ),
+                "Statistical association does not establish cause.",
+            ],
+            "metadata": {"source": source, "n_months": series.n_months},
+        }
+    )
+
+
+@app.post("/api/cuahsi/search")
+async def search_cuahsi(request: CuahsiSearchRequest) -> list[dict[str, object]]:
+    west, south, east, north = request.bounds
+    if not (-180 <= west < east <= 180 and -90 <= south < north <= 90):
+        raise HTTPException(status_code=422, detail="Choose a valid map rectangle.")
+    if request.start > request.end:
+        raise HTTPException(status_code=422, detail="The start date must precede the end date.")
+    try:
+        return await search_series(request.bounds, request.start, request.end, request.keyword)
+    except (httpx.HTTPError, ET.ParseError) as exc:
+        raise HTTPException(
+            status_code=502, detail="CUAHSI could not return station series right now."
+        ) from exc
+
+
+@app.post("/api/cuahsi/analyze")
+async def analyze_cuahsi_series(request: CuahsiAnalysisRequest) -> dict[str, object]:
+    try:
+        records = await search_series(request.bounds, request.start, request.end, request.keyword)
+        record = next((item for item in records if item["id"] == request.series_id), None)
+        if record is None:
+            raise HTTPException(
+                status_code=404,
+                detail="That CUAHSI series is no longer available in this area.",
+            )
+        dates, values = await retrieve_values(
+            str(record["service_url"]),
+            str(record["location"]),
+            str(record["variable_code"]),
+            request.start,
+            request.end,
+        )
+        series = analyze_monthly_observations(dates, values)
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except (httpx.HTTPError, ET.ParseError) as exc:
+        raise HTTPException(
+            status_code=502, detail="The selected CUAHSI station could not be downloaded."
+        ) from exc
+
+    label = f"{record['variable']} · {record['site']}"
+    unit = str(record["unit"] or "source unit").strip()
+    rate_unit = f"{unit}/year"
+    stats = series.statistics
+    return _clean(
+        {
+            "variable": "external_cuahsi",
+            "label": label,
+            "source": f"CUAHSI HydroClient · {record['organization'] or record['service']}",
+            "unit": unit,
+            "rate_unit": rate_unit,
+            "period": {"start": series.start, "end": series.end},
+            "time": series.dates,
+            "value": series.values,
+            "seasonal": series.seasonal,
+            "anomaly": series.anomalies,
+            "trend": stats,
+            "significant": bool(stats["p_ols"] is not None and stats["p_ols"] < 0.05),
+            "summary": make_summary(
+                label,
+                stats["slope_ols"],
+                stats["slope_ols_lo"],
+                stats["slope_ols_hi"],
+                stats["p_ols"],
+                stats["p_mk"],
+                rate_unit,
+                None,
+                label,
+                label,
             ),
-            (
-                "The uploaded file's source metadata and units were supplied by the user "
-                "and were not independently verified."
-            ),
-            "Statistical association does not establish cause.",
-        ],
-        "metadata": {"source": source, "n_months": series.n_months},
-    })
+            "caveats": [
+                (
+                    "This is an observation series from one station, not a spatial mean "
+                    "for the selected region."
+                ),
+                (
+                    "The source's timestamps are aggregated to calendar-month means; "
+                    "missing months remain missing."
+                ),
+                "Statistical association does not establish cause.",
+            ],
+            "metadata": {
+                "source": "CUAHSI HydroClient",
+                "n_months": series.n_months,
+                "latitude": record["latitude"],
+                "longitude": record["longitude"],
+                "site": record["site"],
+                "variable": record["variable"],
+                "organization": record["organization"],
+                "series_id": record["id"],
+            },
+        }
+    )
 
 
 @app.get("/api/variables", response_model=list[VariableInfo])

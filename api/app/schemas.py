@@ -22,6 +22,17 @@ class ExternalSeriesRequest(BaseModel):
     unit: str = Field(min_length=1, max_length=40)
 
 
+class CuahsiSearchRequest(BaseModel):
+    bounds: tuple[float, float, float, float]
+    start: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    end: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    keyword: str = Field(default="discharge", min_length=2, max_length=80)
+
+
+class CuahsiAnalysisRequest(CuahsiSearchRequest):
+    series_id: str = Field(min_length=1, max_length=300)
+
+
 class VariableInfo(BaseModel):
     id: str
     name: str

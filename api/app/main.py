@@ -670,6 +670,7 @@ async def region_analysis(request: RegionRequest) -> dict[str, object]:
             request.end,
             dataset_path,
             str(config["field"]),
+            request.geometry,
         )
     except (ValueError, OSError) as error:
         raise HTTPException(status_code=422, detail=str(error)) from error

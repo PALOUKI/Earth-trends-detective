@@ -150,7 +150,7 @@ async function analyzeCuahsi(series: CuahsiSeries) {
 
 <template>
   <main class="content-page external-page">
-    <div class="content-heading"><span class="eyebrow">NASA · NOAA · EXTERNAL SERIES</span><h1>{{ strings.title }}</h1><p>{{ strings.intro }}</p></div>
+    <div class="content-heading"><span class="eyebrow">NASA · NOAA · EXTERNAL SERIES</span><h1 class="resources-page-title">{{ strings.title }}</h1><p>{{ strings.intro }}</p></div>
     <section class="resource-grid" :aria-label="strings.sources">
       <article><h2>{{ strings.giovanni }}</h2><p>{{ strings.noteGiovanni }}</p><a href="https://giovanni.gsfc.nasa.gov/giovanni/" target="_blank" rel="noreferrer">Open Giovanni ↗</a></article>
       <article><h2>{{ strings.hydrology }}</h2><p>{{ strings.noteHydrology }}</p><a href="https://disc.gsfc.nasa.gov/information/tools?title=Hydrology%20Time%20Series" target="_blank" rel="noreferrer">Open NASA GES DISC ↗</a></article>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { comparisonDirection, fittedLine, formatPValue, formatRate, normalizeLongitude, stepMapZoom } from './trendUtils'
+import { availableAnalysisWindows, comparisonDirection, fittedLine, formatPValue, formatRate, isPeriodRangeWithinCoverage, normalizeLongitude, stepMapZoom } from './trendUtils'
 
 describe('trend display helpers', () => {
   it('formats K/year slopes as signed K/decade rates', () => {
@@ -40,5 +40,22 @@ describe('trend display helpers', () => {
     expect(stepMapZoom(1, 1)).toBe(1.25)
     expect(stepMapZoom(3, 1)).toBe(3)
     expect(stepMapZoom(3, -1)).toBe(2.75)
+  })
+
+  it('hides analysis windows outside a variable’s actual data coverage', () => {
+    expect(availableAnalysisWindows(['full', '2010-fin', '2015-fin'], '2005-01', '2012-12'))
+      .toEqual(['full', '2010-fin'])
+    expect(availableAnalysisWindows(['full', '2010-fin', '2015-fin'], '2012-01', '2022-12'))
+      .toEqual(['full', '2015-fin'])
+    expect(availableAnalysisWindows(['full'], '2012-01', '2022-12'))
+      .toEqual(['full'])
+  })
+
+  it('accepts only valid custom month ranges inside the variable coverage', () => {
+    expect(isPeriodRangeWithinCoverage('2002-04', '2009-11', '2000-02', '2011-08')).toBe(true)
+    expect(isPeriodRangeWithinCoverage('1999-12', '2009-11', '2000-02', '2011-08')).toBe(false)
+    expect(isPeriodRangeWithinCoverage('2002-04', '2012-01', '2000-02', '2011-08')).toBe(false)
+    expect(isPeriodRangeWithinCoverage('2010-01', '2009-11', '2000-02', '2011-08')).toBe(false)
+    expect(isPeriodRangeWithinCoverage('2000-13', '2009-11', '2000-02', '2011-08')).toBe(false)
   })
 })

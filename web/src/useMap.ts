@@ -2,9 +2,13 @@ import { onBeforeUnmount, ref, shallowRef, watch, type Ref } from 'vue'
 import maplibregl, { type Map as MapLibreMap, type MapMouseEvent } from 'maplibre-gl'
 import type { MapLayer } from './api'
 import { normalizeLongitude } from './trendUtils'
+import { COUNTRY_GEOJSON_URL, type EcoregionSelection } from './countries'
+
+type Locale = 'en' | 'fr'
 
 const blankStyle = {
   version: 8 as const,
+  glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
   sources: {
     gibs: {
       type: 'raster' as const,
@@ -12,24 +16,38 @@ const blankStyle = {
         'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_NextGeneration/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg',
       ],
       tileSize: 256,
-      attribution: 'NASA Global Imagery Browse Services (GIBS)',
+      attribution: 'NASA Global Imagery Browse Services (GIBS) · Natural Earth',
+    },
+    ocean: {
+      type: 'geojson' as const,
+      data: 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_ocean.geojson',
     },
   },
-  layers: [{
-    id: 'gibs',
-    type: 'raster' as const,
-    source: 'gibs',
-    paint: { 'raster-saturation': -0.2, 'raster-contrast': -0.05 },
-  }],
+  layers: [
+    {
+      id: 'gibs',
+      type: 'raster' as const,
+      source: 'gibs',
+      paint: { 'raster-saturation': -0.2, 'raster-contrast': -0.05 },
+    },
+    {
+      id: 'ocean-water',
+      type: 'fill' as const,
+      source: 'ocean',
+      paint: { 'fill-color': '#0050D8', 'fill-opacity': 0.88 },
+    },
+  ],
 }
 
 export function useMap(
   element: Ref<HTMLElement | null>,
   selectedLayer: Ref<MapLayer | null>,
-  selectedBounds: Ref<[number, number, number, number]>,
+  selectedBounds: Ref<[number, number, number, number] | null>,
   slopeVisible: Ref<boolean>,
   significanceVisible: Ref<boolean>,
   slopeOpacity: Ref<number>,
+  locale: Ref<Locale>,
+  selectedEcoregion: Ref<EcoregionSelection | null>,
   onPoint: (lat: number, lon: number) => void,
   onRegion: (bounds: [number, number, number, number]) => void,
 ) {
@@ -41,6 +59,79 @@ export function useMap(
   function moveSelectedRegionToFront(instance: MapLibreMap) {
     if (instance.getLayer('selected-region-fill')) instance.moveLayer('selected-region-fill')
     if (instance.getLayer('selected-region-line')) instance.moveLayer('selected-region-line')
+  }
+
+  function addCountryLayers(instance: MapLibreMap) {
+    if (!instance.getSource('country-boundaries')) {
+      instance.addSource('country-boundaries', { type: 'geojson', data: COUNTRY_GEOJSON_URL })
+    }
+    if (!instance.getLayer('country-borders')) {
+      instance.addLayer({
+        id: 'country-borders',
+        type: 'line',
+        source: 'country-boundaries',
+        paint: {
+          'line-color': '#fff',
+          'line-opacity': 0.85,
+          'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.45, 3, 1, 5, 1.5],
+        },
+      })
+    }
+    if (!instance.getLayer('country-labels')) {
+      instance.addLayer({
+        id: 'country-labels',
+        type: 'symbol',
+        source: 'country-boundaries',
+        layout: {
+          'text-field': ['get', locale.value === 'fr' ? 'NAME_FR' : 'NAME'],
+          'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 1, 9, 3, 11, 5, 14],
+          'text-max-width': 8,
+          'text-padding': 3,
+          'text-allow-overlap': false,
+        },
+        paint: {
+          'text-color': '#fff',
+          'text-halo-color': '#1c2938',
+          'text-halo-width': 1.4,
+          'text-halo-blur': 0.3,
+        },
+      })
+    }
+  }
+
+  function showSelectedEcoregion(instance: MapLibreMap) {
+    if (!instance.isStyleLoaded()) {
+      instance.once('idle', () => showSelectedEcoregion(instance))
+      instance.triggerRepaint()
+      return
+    }
+    const featureCollection = {
+      type: 'FeatureCollection' as const,
+      features: selectedEcoregion.value ? [selectedEcoregion.value.feature] : [],
+    }
+    const source = instance.getSource('selected-ecoregion') as maplibregl.GeoJSONSource | undefined
+    if (source) source.setData(featureCollection)
+    else if (selectedEcoregion.value) {
+      instance.addSource('selected-ecoregion', { type: 'geojson', data: featureCollection })
+    }
+    if (!selectedEcoregion.value) return
+    if (!instance.getLayer('selected-ecoregion-fill')) {
+      instance.addLayer({
+        id: 'selected-ecoregion-fill',
+        type: 'fill',
+        source: 'selected-ecoregion',
+        paint: { 'fill-color': '#42a987', 'fill-opacity': 0.28 },
+      }, instance.getLayer('country-borders') ? 'country-borders' : undefined)
+    }
+    if (!instance.getLayer('selected-ecoregion-line')) {
+      instance.addLayer({
+        id: 'selected-ecoregion-line',
+        type: 'line',
+        source: 'selected-ecoregion',
+        paint: { 'line-color': '#087f5b', 'line-width': 2.5 },
+      }, instance.getLayer('country-labels') ? 'country-labels' : undefined)
+    }
   }
 
   function applyTrendLayers(instance: MapLibreMap, layer: MapLayer) {
@@ -59,7 +150,9 @@ export function useMap(
         })
       }
       if (!instance.getLayer(id)) {
-        instance.addLayer({ id, type: 'raster', source: id, paint: { 'raster-opacity': opacity } })
+        const rasterLayer = { id, type: 'raster' as const, source: id, paint: { 'raster-opacity': opacity } }
+        if (instance.getLayer('country-borders')) instance.addLayer(rasterLayer, 'country-borders')
+        else instance.addLayer(rasterLayer)
       } else {
         instance.setPaintProperty(id, 'raster-opacity', opacity)
       }
@@ -95,12 +188,19 @@ export function useMap(
 
   function showSelectedRegion(instance: MapLibreMap, bounds: [number, number, number, number]) {
     if (!instance.isStyleLoaded()) {
-      instance.once('load', () => showSelectedRegion(instance, bounds))
+      instance.once('idle', () => showSelectedRegion(instance, bounds))
+      instance.triggerRepaint()
       return
     }
     const [west, south, east, rawNorth] = bounds
     const north = Math.min(85, rawNorth)
-    drawBounds(instance, [west, south], [east, north])
+    if (selectedEcoregion.value) {
+      const source = instance.getSource('selected-region') as maplibregl.GeoJSONSource | undefined
+      source?.setData({ type: 'FeatureCollection', features: [] })
+      showSelectedEcoregion(instance)
+    } else {
+      drawBounds(instance, [west, south], [east, north])
+    }
     instance.fitBounds([[west, south], [east, north]], {
       padding: { top: 70, right: 45, bottom: 45, left: 45 },
       maxZoom: 5,
@@ -111,6 +211,8 @@ export function useMap(
   function clearSelectedRegion() {
     const source = map.value?.getSource('selected-region') as maplibregl.GeoJSONSource | undefined
     source?.setData({ type: 'FeatureCollection', features: [] })
+    const ecoregionSource = map.value?.getSource('selected-ecoregion') as maplibregl.GeoJSONSource | undefined
+    ecoregionSource?.setData({ type: 'FeatureCollection', features: [] })
   }
 
   function startDrawing() {
@@ -128,7 +230,7 @@ export function useMap(
     const instance = map.value
     if (!instance) return
     instance.resize()
-    showSelectedRegion(instance, selectedBounds.value)
+    if (selectedBounds.value) showSelectedRegion(instance, selectedBounds.value)
   }
 
   watch(element, (container) => {
@@ -152,7 +254,9 @@ export function useMap(
     instance.on('load', () => {
       // The map is recreated when navigating from the landing page. Reapply the
       // current selection before raster layers mutate the style load state.
-      showSelectedRegion(instance, selectedBounds.value)
+      addCountryLayers(instance)
+      if (selectedEcoregion.value) showSelectedEcoregion(instance)
+      if (selectedBounds.value) showSelectedRegion(instance, selectedBounds.value)
       if (selectedLayer.value) applyTrendLayers(instance, selectedLayer.value)
     })
     instance.on('click', (event: MapMouseEvent) => {
@@ -189,8 +293,21 @@ export function useMap(
   }, { immediate: true, flush: 'post' })
 
   watch([selectedBounds, map], ([bounds, instance]) => {
-    if (instance) showSelectedRegion(instance, bounds)
+    if (!instance) return
+    if (bounds) showSelectedRegion(instance, bounds)
+    else clearSelectedRegion()
   }, { immediate: true, flush: 'post' })
+
+  watch([selectedEcoregion, map], ([, instance]) => {
+    if (instance) showSelectedEcoregion(instance)
+  }, { immediate: true, flush: 'post' })
+
+  watch(locale, (language) => {
+    const instance = map.value
+    if (instance?.getLayer('country-labels')) {
+      instance.setLayoutProperty('country-labels', 'text-field', ['get', language === 'fr' ? 'NAME_FR' : 'NAME'])
+    }
+  })
 
   watch([selectedLayer, slopeVisible, significanceVisible, slopeOpacity], ([layer]) => {
     const instance = map.value

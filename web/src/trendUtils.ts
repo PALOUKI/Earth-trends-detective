@@ -29,6 +29,36 @@ export function stepMapZoom(zoom: number, direction: -1 | 1): number {
   return Math.min(3, Math.max(1, Number((zoom + direction * 0.25).toFixed(2))))
 }
 
+export type AnalysisWindow = 'full' | '2010-fin' | '2015-fin'
+
+export function isPeriodRangeWithinCoverage(
+  start: string,
+  end: string,
+  dataStart?: string,
+  dataEnd?: string,
+): boolean {
+  const isMonth = (value: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(value)
+  if (!dataStart || !dataEnd) return false
+  return isMonth(start) && isMonth(end)
+    && start <= end && start >= dataStart && end <= dataEnd
+}
+
+export function availableAnalysisWindows(
+  configured: string[] | undefined,
+  dataStart?: string,
+  dataEnd?: string,
+): AnalysisWindow[] {
+  const supported = new Set(configured ?? ['full'])
+  const startYear = dataStart ? Number(dataStart.slice(0, 4)) : null
+  const endYear = dataEnd ? Number(dataEnd.slice(0, 4)) : null
+  return (['full', '2010-fin', '2015-fin'] as const).filter((window) => {
+    if (!supported.has(window)) return false
+    const cutoff = window === '2010-fin' ? 2010 : window === '2015-fin' ? 2015 : null
+    if (cutoff === null) return true
+    return (startYear === null || startYear <= cutoff) && (endYear === null || endYear >= cutoff)
+  })
+}
+
 export function fittedLine(values: Array<number | null>, slopePerYear: number | null) {
   if (slopePerYear === null || !Number.isFinite(slopePerYear)) return values.map(() => null)
   const valid = values.flatMap((value, index) =>

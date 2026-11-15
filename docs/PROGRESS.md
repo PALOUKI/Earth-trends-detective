@@ -1,8 +1,13 @@
 # Project progress
 
-Updated: 2026-11-13
+Updated: 2026-11-15
 
 ## Current milestone: M1b — intégration multi-variable (données et API locales prêtes)
+
+- [x] Country search now resolves the Natural Earth country reference point against the RESOLVE 2017 ecoregion service; it displays the returned ecoregion and biome, highlights that exact polygon, and uses the same polygon mask for regional analysis. Live query for Togo returned West Sudanian savanna (Tropical & Subtropical Grasslands, Savannas & Shrublands). Frontend tests/build and the backend suite pass (13 web tests; 57 Python tests).
+- [x] Added a bilingual Methods and Validation explanation of the country-to-ecoregion lookup, the Natural Earth country outlines/labels, the exact source links, and the limits of selecting one ecoregion from a country's reference point.
+- [x] Kept NASA GIBS Blue Marble as the imagery base and added a verified Natural Earth ocean polygon fill in blue so dark sea areas are easier to read without recoloring land or scientific overlays.
+- [x] Explorer regional analysis loads the global trend-cell raster and significance stippling alongside the selected-region series; the map explanation, legend, and opacity panel are visible after analysis. Period controls are limited to configured windows within the variable's reported data coverage; frontend coverage tests added.
 
 - [x] Read the full `AGENT_BRIEF.md`; section 1 bis governs scope and sequencing.
 - [x] Confirmed the GISTEMP v4 download page and selected gridded NetCDF product are published by NASA GISS. The official compressed file URL is `https://data.giss.nasa.gov/pub/gistemp/gistemp1200_GHCNv4_ERSSTv5.nc.gz`.

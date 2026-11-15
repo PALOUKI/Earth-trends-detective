@@ -58,6 +58,10 @@ export interface Analysis {
   caveats: string[]
 }
 
+export type RegionGeometry =
+  | { type: 'Polygon'; coordinates: number[][][] }
+  | { type: 'MultiPolygon'; coordinates: number[][][][] }
+
 export interface Comparison {
   a: Analysis
   b: Analysis
@@ -138,8 +142,8 @@ export const api = {
     getJson<Array<{ variable: string; name: string; definition: string; available: boolean; message: string; region_id?: string | null }>>(
       `/api/suggest?theme=${encodeURIComponent(theme)}&place=${encodeURIComponent(place)}`,
     ),
-  region: (variable: string, bounds: [number, number, number, number], label: string, start?: string, end?: string) =>
-    postJson<Analysis>('/api/region', { variable, bounds, label, start, end }),
+  region: (variable: string, bounds: [number, number, number, number], label: string, start?: string, end?: string, geometry?: RegionGeometry) =>
+    postJson<Analysis>('/api/region', { variable, bounds, label, start, end, ...(geometry ? { geometry } : {}) }),
   point: (variable: string, lat: number, lon: number, start?: string, end?: string) =>
     getJson<Analysis>(`/api/point?variable=${encodeURIComponent(variable)}&lat=${lat}&lon=${lon}${start ? `&start=${start}` : ''}${end ? `&end=${end}` : ''}`),
   map: (variable: string, window: string) => getJson<MapLayer>(`/api/trend/${encodeURIComponent(variable)}?window=${window}`),

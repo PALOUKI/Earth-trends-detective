@@ -4,21 +4,23 @@ Ce document est fait pour présenter le projet à des personnes qui le découvre
 
 ## L'idée en une phrase
 
-**Notre application aide à voir comment un indicateur de la Terre change selon le lieu et au fil du temps.**
+**Notre application aide à comprendre comment les mesures de la Terre évoluent selon les régions et au fil du temps.**
 
 ## Ce que tu peux dire — environ une minute
 
-> Bonjour. Les satellites et les modèles scientifiques nous donnent beaucoup d'informations sur la Terre. Mais il est difficile de savoir quoi regarder, où regarder et si un changement dure vraiment dans le temps.
+> Bonjour. La Terre change en permanence. La température, la pluie, la végétation et l'humidité du sol évoluent avec le temps.
 >
-> Nous avons créé **Earth Trends Detective** pour rendre ces informations plus faciles à explorer. Dans l'application, on choisit une mesure — par exemple la température, la pluie ou la végétation — puis un lieu et une période. On voit le résultat sur une carte et sur un graphique. L'application indique aussi si la tendance observée est assez claire dans les données ou si elle reste incertaine.
+> Et ces changements ne sont pas les mêmes partout. Dans nos zones d'exemple, l'indicateur satellitaire lié à la végétation baisse en Amazonie et monte au Sahara. La même mesure peut donc évoluer dans des sens différents selon le lieu.
 >
-> On peut ensuite comparer deux lieux. Par exemple, avec notre indicateur satellitaire de végétation, la tendance va dans un sens dans notre zone d'exemple en Amazonie et dans l'autre sens dans notre zone d'exemple au Sahara. Cela montre pourquoi il est utile de regarder les régions séparément.
+> Pour étudier la Terre, les scientifiques suivent différentes mesures : la température, la pluie, la végétation et bien d'autres. Chaque mesure est une **variable**. Il en existe beaucoup : il faut choisir quoi observer, où et quand, puis vérifier si le changement observé est assez clair pour parler d'une tendance.
 >
-> L'application aide à voir ce qui change et où. Elle ne prétend pas expliquer pourquoi le changement arrive. Elle donne au public un moyen simple de poser une question, de regarder les données et de mieux comprendre ce qu'elles montrent.
+> Nous avons créé **Earth Trends Detective** pour rendre cette enquête plus simple. On choisit une mesure, une région et une période ; l'application montre l'évolution sur une carte et un graphique, et indique si les données montrent une tendance claire ou encore incertaine.
+>
+> On peut comparer les régions pour repérer ces différences. L'application aide à voir ce qui change et où, sans prétendre expliquer la cause.
 
 ## Si tu as seulement 30 secondes
 
-> **Earth Trends Detective transforme des mesures de la Terre en une enquête simple.** On choisit un indicateur, un lieu et une période. L'application affiche une carte, un graphique et des explications sur la tendance. On peut comparer deux lieux pour voir si la même mesure évolue de la même façon. C'est un outil pour explorer les données, pas pour inventer une cause.
+> La Terre ne change pas de la même façon partout : la pluie, la température ou la végétation peuvent évoluer différemment selon les régions. Les scientifiques suivent ces mesures, qu'on appelle des variables, mais il y en a beaucoup et leurs résultats ne sont pas toujours simples à lire. **Earth Trends Detective** permet de choisir une mesure, une région et une période, puis de voir la tendance sur une carte et un graphique. On peut comparer deux lieux et vérifier si les données montrent un changement clair.
 
 ## Quoi montrer dans l'application — environ 2 à 3 minutes
 

@@ -11,6 +11,10 @@ class RegionRequest(BaseModel):
     start: str | None = None
     end: str | None = None
     label: str = "Selected region"
+    geometry: dict[str, object] | None = Field(
+        default=None,
+        description="Optional GeoJSON Polygon or MultiPolygon for an ecologically defined region",
+    )
 
 
 class ExternalSeriesRequest(BaseModel):

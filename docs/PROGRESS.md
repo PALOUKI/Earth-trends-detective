@@ -166,3 +166,19 @@ Updated: 2026-11-15
 - M8 has not started: the brief requires a public host, domain, deployment access, open ports 80/443, and an HTTPS end-to-end check. No alternative host has been selected.
 - GISTEMP, MODIS NDVI/EVI, GPM precipitation, MERRA-2 EVAP, GLDAS soil moisture, AIRS temperature, and OMI NO₂ all have local processed series, trend products, map tiles, and regional API responses. Manual frontend/browser acceptance and remote M8 deployment remain outstanding.
 - Do not start unrelated M7 extensions before M8. Regional comparison is included as a core challenge workflow; the advanced Rigorous result controls remain deferred.
+
+## NASA submission resource audit — 2026-11-15
+
+- [x] Created [`NASA_RESOURCES_FOR_SUBMISSION.md`](NASA_RESOURCES_FOR_SUBMISSION.md) with copy-ready Link Text/Link URL entries, exact NASA product identifiers, CMR concept IDs, local coverage, visual-only GIBS layers, validation reference, access services, and explicit exclusions.
+- [x] Re-ran six CMR collection searches by short name and version; each returned exactly one matching collection. Verified live GIBS WMS responses for Blue Marble and the dated MODIS Terra LST hero layer (HTTP 200).
+- [x] Confirmed the live API catalog reports all eight analytical variables as ready and local Zarr/trend stores exist. Updated stale `data/catalog.yaml` integration states and periods for MERRA-2, GLDAS, AIRS, and OMI.
+- [x] Updated `DATA_SOURCES.md` to distinguish current local analysis coverage from full collection coverage and to clarify that GIBS imagery is not a source of analytical trend values.
+- [ ] The submission owner should copy the primary resource table to the NASA form and decide whether to add the optional manually imported NASA tools (Giovanni, Hydrology Time Series, AppEEARS); these are clearly marked as portal links, not sources of the built-in analysis records.
+
+## Other resources submission audit — 2026-11-15
+
+- [x] Added the second-form inventory to [`NASA_RESOURCES_FOR_SUBMISSION.md`](NASA_RESOURCES_FOR_SUBMISSION.md): Natural Earth country/ocean GeoJSON, the live RESOLVE ecoregion service, CUAHSI HIS Central/WaterOneFlow, NOAA CDO link, MapLibre glyphs, Google Fonts/Stitch, the public project repository/assets, statistical references, and direct runtime/development packages.
+- [x] Ran live requests against primary external service, data, font, design-tool, repo, and asset URLs; distinguished public reachability from permissions and scientific suitability.
+- [x] Owner confirmed the logo was generated with Google Gemini and found the landing-page arrow via Google search. Their original-source URL cells are intentionally blank in the copy-ready rows for the owner to complete; repository copies remain linked in the notes.
+- [ ] Confirm reuse terms for the public RESOLVE ArcGIS layer (its service metadata contains no license) and locate the original page/creator/license for the Google-search arrow before representing either as cleared material.
+- [ ] Dynamic CUAHSI provider endpoints vary by selected station; preserve the provider name and returned service URL for any specific station used in a submitted demonstration.

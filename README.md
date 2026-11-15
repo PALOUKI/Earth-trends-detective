@@ -18,7 +18,7 @@ The application is designed to make the analysis traceable: data products and th
 
 ### Data availability
 
-Availability is determined by the processed data installed with the application, not by the presence of a catalogue entry alone. The repository's current catalogue marks GISTEMP, MODIS NDVI/EVI, and GPM IMERG precipitation as analysis-ready. MERRA-2, GLDAS, AIRS, and OMI are listed as acquiring or pending processing; they must not be treated as available analyses until their complete local processing path is ready. Check [`docs/PROGRESS.md`](docs/PROGRESS.md) for the latest status and [`data/catalog.yaml`](data/catalog.yaml) for product-level metadata.
+Availability is determined by the processed data installed with the application, not by the presence of a catalogue entry alone. The current local catalogue marks eight variables as analysis-ready: GISTEMP temperature anomaly, MODIS NDVI and EVI, GPM IMERG precipitation, MERRA-2 evaporation, GLDAS topsoil moisture, AIRS surface atmospheric temperature, and OMI tropospheric NO₂. Their local coverage periods and product identifiers are listed in [`docs/NASA_RESOURCES_FOR_SUBMISSION.md`](docs/NASA_RESOURCES_FOR_SUBMISSION.md) and [`data/catalog.yaml`](data/catalog.yaml). Check [`docs/PROGRESS.md`](docs/PROGRESS.md) for current validation and deployment status.
 
 ## Analysis at a glance
 
@@ -148,8 +148,8 @@ This project is under active development. Product availability, validation cover
 
 No repository license file is currently included. Confirm and add the intended license before redistributing this project.
 
-## Résumé français
+## Project summary
 
-Earth Trends Detective est une application pédagogique pour étudier les tendances de variables de sciences de la Terre de la NASA. L'utilisateur choisit une variable disponible, une région et une période, puis consulte une série temporelle corrigée du cycle saisonnier, un taux de variation, des intervalles de confiance et des tests statistiques. Une carte présente les tendances spatiales et leur significativité. Les données et limites sont documentées ; les résultats statistiques ne déterminent pas les causes.
+Earth Trends Detective is an educational application for investigating trends in NASA Earth science data. Users choose an analysis-ready variable, a region, and a time period, then view a deseasonalized time series, an estimated rate of change, confidence intervals, and statistical tests. A map shows where trends occur and whether they are statistically significant. Data sources, methods, and limitations are documented; statistical results do not identify causes.
 
-Pour démarrer : `make setup`, puis `make dev` à la racine et `npm run dev` dans `web/`. L'architecture, les commandes de traitement, les tests, les sources des données et les méthodes sont décrits dans les sections anglaises ci-dessus et dans les documents liés.
+To get started, run `make setup`, then `make dev` from the repository root and `npm run dev` from `web/`. The sections above and linked documents describe the architecture, processing commands, tests, data sources, and methods.

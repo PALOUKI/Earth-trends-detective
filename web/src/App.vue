@@ -867,9 +867,12 @@ onMounted(async () => {
 
 <template>
   <div class="app-shell" :data-theme="theme">
-    <header v-if="!showAnalysisDetails" class="topbar">
+    <header v-if="!showAnalysisDetails" class="topbar" :class="{ 'has-home-disclaimer': page === 'home' }">
+      <div v-if="page === 'home'" class="home-nasa-disclaimer" role="note">
+        {{ locale === 'fr' ? 'Earth Trend Detective est un projet indépendant et n’est pas un produit officiel de la NASA.' : 'Earth Trend Detective is an independent project and is not an official NASA product.' }}
+      </div>
       <a class="brand" href="#home" @click.prevent="page = 'home'">
-        <img class="brand-logo" src="/images/app-logo.png" alt="" aria-hidden="true" />
+        <span class="logo-mark"><img class="brand-logo" src="/images/app-logo.png" alt="" aria-hidden="true" /><span>SI-generated</span></span>
         <span class="brand-name">Earth Trend Detective</span>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
@@ -935,7 +938,7 @@ onMounted(async () => {
       <footer class="landing-footer">
         <div class="landing-footer-content">
           <section class="landing-footer-intro">
-            <a class="landing-footer-brand" href="#home" @click.prevent="page = 'home'"><img class="brand-logo" src="/images/app-logo.png" alt="" aria-hidden="true" /><span>Earth Trend Detective</span></a>
+            <a class="landing-footer-brand" href="#home" @click.prevent="page = 'home'"><span class="logo-mark"><img class="brand-logo" src="/images/app-logo.png" alt="" aria-hidden="true" /><span>SI-generated</span></span><span>Earth Trend Detective</span></a>
             <p>{{ t.notOfficial }}</p><p>{{ t.footerNote }}</p>
           </section>
           <nav class="landing-footer-links" :aria-label="t.footerExplore">
@@ -1284,5 +1287,7 @@ onMounted(async () => {
       <div><span class="eyebrow">GUIDED EXAMPLE · {{ demoStep }}/3</span><strong>{{ selectedLabel }}</strong><p v-if="demoStep === 2">{{ locale === 'en' ? 'The regional series is ready. The chart separates monthly anomalies from the seasonal cycle.' : 'La série est prête. Le graphique sépare les anomalies du cycle saisonnier.' }}</p><p v-else-if="demoStep === 3">{{ analysis?.summary[locale] }}</p><p v-else>{{ locale === 'en' ? 'The example region and complete GISTEMP record are selected.' : 'La région et toute la série GISTEMP sont sélectionnées.' }}</p></div>
       <button class="button primary" @click="stepDemo">{{ demoStep === 3 ? t.finish : t.next }}</button>
     </div>
+
+    <span class="si-generated-watermark" aria-label="AI-generated design: SI-generated">SI-generated</span>
   </div>
 </template>

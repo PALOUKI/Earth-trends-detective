@@ -25,8 +25,13 @@ button, input, select { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #79a5f4; outline-offset: 2px; }
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
-.topbar { min-height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 28px 22px; background: #fff; border-bottom: 1px solid var(--line); z-index: 10; }
+.si-generated-watermark { position: fixed; right: 16px; bottom: 14px; z-index: 60; padding: 8px 12px; border: 1px solid rgba(255,255,255,.58); color: #fff; background: rgba(21,22,34,.86); font-size: 14px; font-weight: 700; letter-spacing: .045em; line-height: 1.25; pointer-events: none; user-select: none; }
+.topbar { position: relative; min-height: 68px; display: flex; align-items: center; justify-content: space-between; padding: 28px 22px; background: #fff; border-bottom: 1px solid var(--line); z-index: 10; }
+.topbar.has-home-disclaimer { padding-top: 68px; }
+.home-nasa-disclaimer { position: absolute; top: 0; right: 0; left: 0; display: flex; min-height: 38px; align-items: center; justify-content: center; padding: 8px 16px; color: #151622; background: #e7f434; font-size: 13px; font-weight: 600; line-height: 1.35; text-align: center; }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--blue); min-width: 280px; }
+.logo-mark { position: relative; display: inline-flex; flex: 0 0 auto; line-height: 0; }
+.logo-mark > span { position: absolute; right: 0; bottom: 0; left: 0; z-index: 1; padding: 3px 1px; color: #fff; background: rgba(10,29,76,.96); font-size: 7px; font-weight: 800; letter-spacing: -.025em; line-height: 1; text-align: center; white-space: nowrap; }
 .brand-logo { display: block; width: 66px; height: 58px; flex: 0 0 auto; object-fit: contain; }
 .brand-name { font-size: 16px; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; }
 .brand-tag { font-size: 9px; letter-spacing: .08em; font-weight: 700; color: #144296; padding: 4px 6px; border: 1px solid #d5e4f8; border-radius: 4px; background: #eef4ff; white-space: nowrap; }
@@ -460,6 +465,7 @@ select { padding-right: 28px; background-image: linear-gradient(45deg, transpare
 .landing-footer-intro { max-width: 410px; }
 .landing-footer-brand { display: inline-flex; align-items: center; gap: 9px; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; white-space: nowrap; }
 .landing-footer-brand .brand-logo { width: 48px; height: 42px; }
+.landing-footer-brand .logo-mark > span { padding: 2px 0; font-size: 5.5px; }
 .landing-footer-brand .brand-logo { filter: brightness(0) invert(1); }
 .landing-footer-intro p { margin: 12px 0 0; color: #e3eaf7; font-size: 13px; line-height: 1.65; }
 .landing-footer-links { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
@@ -577,6 +583,8 @@ select { padding-right: 28px; background-image: linear-gradient(45deg, transpare
 @media (max-width: 650px) {
   body { min-width: 360px; }
   .topbar { height: auto; min-height: 58px; padding: 7px 10px; flex-wrap: wrap; }
+  .topbar.has-home-disclaimer { padding-top: 45px; }
+  .home-nasa-disclaimer { min-height: 36px; padding: 7px 10px; font-size: 11px; }
   .brand { gap: 7px; }
   .brand-logo { width: 52px; height: 46px; }
   .brand-name { font-size: 13px; }

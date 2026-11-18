@@ -2,7 +2,7 @@
 
 Updated: 2026-11-18
 
-## Current milestone: M1b — intégration multi-variable (données et API locales prêtes)
+## Current status: M8 — déploiement HTTPS opérationnel ; vérifications restantes des jalons M2–M6 indiquées ci-dessous
 
 - [x] Country search now resolves the Natural Earth country reference point against the RESOLVE 2017 ecoregion service; it displays the returned ecoregion and biome, highlights that exact polygon, and uses the same polygon mask for regional analysis. Live query for Togo returned West Sudanian savanna (Tropical & Subtropical Grasslands, Savannas & Shrublands). Frontend tests/build and the backend suite pass (13 web tests; 57 Python tests).
 - [x] Added a bilingual Methods and Validation explanation of the country-to-ecoregion lookup, the Natural Earth country outlines/labels, the exact source links, and the limits of selecting one ecoregion from a country's reference point.
@@ -14,7 +14,7 @@ Updated: 2026-11-18
 - [x] Added pinned Python dependencies, `uv`, Make targets, CI, and secret-safe environment template.
 - [x] `uv sync --all-groups` succeeds with Python 3.11; pytest and Ruff pass locally.
 - [x] Earthdata environment login succeeded and a live CMR search request completed; CMR returned zero GISTEMP records, consistent with GISTEMP being served directly by NASA GISS and not cataloged here as a CMR granule product.
-- [ ] Deployment server/domain credentials are not available; M8 deployment cannot be completed until an endpoint and deployment access are available.
+- [x] M8 deployment access and domain were supplied; see the verified deployment record below.
 - [x] Portée corrigée selon l'énoncé officiel : l'objectif livré couvre plusieurs variables NASA, pas GISTEMP seul.
 - [x] Requête CMR réelle : MOD13C2 v061 trouvé et un granule mondial de janvier 2024 téléchargé (94 485 525 octets). Le fichier révèle NDVI/EVI mensuels à 0,05°, facteur d'échelle 1/10000 et variable de qualité pixel.
 - [x] Dépendance HDF4 `pyhdf==0.11.6` ajoutée ; adaptateur MOD13C2 NDVI/EVI écrit pour masquer les pixels Fill et rangs qualité >1, agréger en grille 2° et produire Zarr.
@@ -131,11 +131,16 @@ Updated: 2026-11-18
 - [x] Local Vite and API are running. `GET /` and proxied `GET /api/variables` both returned HTTP 200.
 - [ ] Manual mobile/browser review remains outstanding. Build reports a large JavaScript bundle (1.53 MB minified, 459 KB gzip); code splitting would improve first load.
 
-## M8 preparation and required access
+## M8 deployment — verified 2026-11-18
 
 - [x] Added API and web Dockerfiles, Compose topology, Caddy HTTPS routing, persistent certificate storage, restart policies, and read-only processed-data mounts. `docker compose config` succeeds.
 - [x] `make deploy` invokes `deploy/deploy.sh`, which sends only processed Zarr/COG/XYZ products for all selected variables over SSH/rsync, builds Compose remotely, and checks the HTTPS health endpoint.
-- [ ] Remote execution remains blocked until the host, SSH user/key access, public DNS domain, and inbound 80/443 status are supplied. Deployed GISTEMP data do not require Earthdata credentials.
+- [x] Deployed the `develop` revision to `/opt/apps/naza` on the supplied Contabo host. Because that host already runs Nginx for other applications, the project uses an isolated Nginx vhost proxying to Caddy on `127.0.0.1:18081`; existing vhosts were left running.
+- [x] Added the production-only Compose override and `ALLOWED_ORIGINS` configuration; Nginx configuration test passed and HTTP redirects to HTTPS.
+- [x] Certbot issued and installed a valid Let's Encrypt certificate for `d2t.africodehub.net`, expiring 2027-02-16; automatic renewal is scheduled.
+- [x] Public smoke checks on HTTPS: home page `200 text/html`, `/api/health` `200 application/json` (`{"status":"ok"}`), `/api/variables` `200 application/json` (8 analysis-ready variables), and `/images/app-logo.png` `200 image/png`.
+- [x] API container starts with Rasterio after adding its missing `libexpat1` runtime dependency; the fix is committed as `ac3bbad`.
+- [x] Server `.env` is mode `600` and contains only runtime domain/CORS settings. Earthdata credentials were not copied: deployed analysis reads the already-processed datasets, and server-side ingestion is not part of the runtime path.
 
 ## Challenge Resources update — 2026-11-13
 
@@ -163,9 +168,9 @@ Updated: 2026-11-18
 - M0 and M1 have recorded evidence and their local acceptance checks pass.
 - M2, M3, M4, M5, and M6 are partial; do not describe them as accepted until the unchecked requirements above pass.
 - Milestone branches exist for M2, M4, M5, and M6; only the M0/M1 baseline is on `main`. Do not merge incomplete milestones.
-- M8 has not started: the brief requires a public host, domain, deployment access, open ports 80/443, and an HTTPS end-to-end check. No alternative host has been selected.
-- GISTEMP, MODIS NDVI/EVI, GPM precipitation, MERRA-2 EVAP, GLDAS soil moisture, AIRS temperature, and OMI NO₂ all have local processed series, trend products, map tiles, and regional API responses. Manual frontend/browser acceptance and remote M8 deployment remain outstanding.
-- Do not start unrelated M7 extensions before M8. Regional comparison is included as a core challenge workflow; the advanced Rigorous result controls remain deferred.
+- M8 is deployed at `https://d2t.africodehub.net`; public HTTP smoke checks pass. M2–M6 still have the outstanding acceptance items listed in their sections, including a manual browser/mobile walkthrough.
+- GISTEMP, MODIS NDVI/EVI, GPM precipitation, MERRA-2 EVAP, GLDAS soil moisture, AIRS temperature, and OMI NO₂ all have local processed series, trend products, map tiles, and regional API responses.
+- Do not describe unchecked M2–M6 acceptance items as complete. Regional comparison is included as a core challenge workflow; advanced Rigorous result controls remain deferred.
 
 ## NASA submission resource audit — 2026-11-15
 

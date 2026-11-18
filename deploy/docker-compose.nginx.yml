@@ -1,0 +1,10 @@
+services:
+  caddy:
+    ports: !override
+      - "127.0.0.1:18081:80"
+    volumes: !override
+      - ./deploy/Caddyfile.nginx:/etc/caddy/Caddyfile:ro
+      - web_static:/srv:ro
+      - ./data/tiles:/tiles:ro
+      - caddy_data:/data
+      - caddy_config:/config

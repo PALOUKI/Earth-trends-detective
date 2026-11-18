@@ -132,6 +132,8 @@ make deploy
 
 The script transfers derived products required by the application rather than raw NASA downloads or local secrets. Review [`docs/PROGRESS.md`](docs/PROGRESS.md) for current deployment prerequisites and acceptance status.
 
+When a host Nginx server already owns ports 80 and 443, run the stack with `docker compose -f docker-compose.yml -f deploy/docker-compose.nginx.yml up --build -d` instead. This binds the Caddy gateway to `127.0.0.1:18081` in HTTP-only mode; configure the host Nginx virtual host and Certbot certificate to serve the public HTTPS domain and proxy requests to that local port. This avoids stopping Nginx or disturbing its other sites.
+
 ## Documentation
 
 - [`AGENT_BRIEF.md`](AGENT_BRIEF.md): challenge scope and acceptance criteria.

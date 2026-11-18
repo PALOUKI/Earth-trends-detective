@@ -7,6 +7,8 @@ services:
     volumes:
       - ./data/processed:/app/data/processed:ro
       - ./data/tiles:/app/data/tiles:ro
+    environment:
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:5173}
     expose:
       - "8000"
 

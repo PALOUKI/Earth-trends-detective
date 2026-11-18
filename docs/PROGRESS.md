@@ -1,6 +1,6 @@
 # Project progress
 
-Updated: 2026-11-15
+Updated: 2026-11-18
 
 ## Current milestone: M1b — intégration multi-variable (données et API locales prêtes)
 
@@ -183,3 +183,4 @@ Updated: 2026-11-15
 - [ ] Confirm reuse terms for the public RESOLVE ArcGIS layer (its service metadata contains no license) and locate the original page/creator/license for the Google-search arrow before representing either as cleared material.
 - [ ] Dynamic CUAHSI provider endpoints vary by selected station; preserve the provider name and returned service URL for any specific station used in a submitted demonstration.
 - [x] Replaced the French README summary with an English project summary and corrected the availability paragraph to match the eight analysis-ready variables in the current catalogue.
+- [x] Added the MIT license for project-authored code/documentation and clarified in the README that third-party NASA and other materials retain their own terms.

@@ -146,7 +146,7 @@ This project is under active development. Product availability, validation cover
 
 ## License
 
-No repository license file is currently included. Confirm and add the intended license before redistributing this project.
+Project-authored source code and documentation are licensed under the [MIT License](LICENSE), copyright © 2026 Earth Trend Detective contributors. NASA datasets and imagery, map data, fonts, and other third-party materials are not relicensed by this notice; their respective terms apply. See [`docs/NASA_RESOURCES_FOR_SUBMISSION.md`](docs/NASA_RESOURCES_FOR_SUBMISSION.md) and [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) for source details.
 
 ## Project summary
 
